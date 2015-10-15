@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest,\
         HttpResponseNotAllowed
 
-from .models import PredictionVariable, Prediction
+from .models import Variable, Prediction
 
 def get_prediction_table(request, output_label):
     """Returns a 2D-array mapping output values to probabilities.
@@ -35,9 +35,9 @@ def get_prediction_table(request, output_label):
     except ValueError:
         return HttpResponseBadRequest("Param input_value needs to be a float")
     # Attempt to retrieve the input variable by its label, else return an error
-    input_variable = get_object_or_404(PredictionVariable, pk=input_label)
+    input_variable = get_object_or_404(Variable, pk=input_label)
     # Attempt to retrieve the output variable by its label, else return an error
-    output_variable = get_object_or_404(PredictionVariable, pk=output_label)
+    output_variable = get_object_or_404(Variable, pk=output_label)
     # Retrieve the prediction table
     table = Prediction.get_table(input_variable, input_value,
             output_variable)

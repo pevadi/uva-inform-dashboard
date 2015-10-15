@@ -1,7 +1,7 @@
 """Database models used in the prediction app."""
 from django.db import models
 
-class PredictionVariable(models.Model):
+class Variable(models.Model):
     """Model containing information on variables used in predictions."""
     VARIABLE_TYPES = (('IN', "Input variable"), ('OUT', "Output variable"))
 
@@ -23,12 +23,12 @@ class PredictionVariable(models.Model):
         return unicode(self).encode('ascii', 'xmlcharrefreplace')
 
     def __repr__(self):
-        return "PredictionVariable(%s)" % (self,)
+        return "Variable(%s)" % (self,)
 
 
-class PredictionVariableValue(models.Model):
+class VariableValue(models.Model):
     """Model containing the possible values for a variable."""
-    variable = models.ForeignKey('PredictionVariable', related_name="values")
+    variable = models.ForeignKey('Variable', related_name="values")
     value = models.FloatField()
 
     def __unicode__(self):
@@ -38,14 +38,14 @@ class PredictionVariableValue(models.Model):
         return str(self.value)
 
     def __repr__(self):
-        return "PredictionVariableValue(%s)" % (self,)
+        return "VariableValue(%s=%s)" % (self.variable.name, self)
 
 
 class Prediction(models.Model):
     """Model containing probabilistic mappings from input to output values."""
-    input_variable = models.ForeignKey('PredictionVariable', related_name='+')
+    input_variable = models.ForeignKey('Variable', related_name='+')
     input_value = models.FloatField()
-    output_variable = models.ForeignKey('PredictionVariable', related_name='+')
+    output_variable = models.ForeignKey('Variable', related_name='+')
     output_value = models.FloatField()
     probability = models.FloatField()
 
