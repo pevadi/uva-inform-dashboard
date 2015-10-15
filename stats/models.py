@@ -41,6 +41,32 @@ class VariableValue(models.Model):
         return "VariableValue(%s=%s)" % (self.variable.name, self)
 
 
+class StatisticGroup(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    label = models.CharField(max_length=255, blank=True)
+    members = models.ManyToManyField('course.Student', blank=True)
+
+    def natural_key(self):
+        return (self.name,)
+
+    def __unicode__(self):
+        return unicode(self.label or self.name)
+
+    def __str__(self):
+        return unicode(self).encode('ascii', 'xmlcharrefreplace')
+
+    def __repr__(self):
+        return "StatisticGroup(%s)" % (self,)
+
+
+class Statistic(models.Model):
+    student = models.CharField(max_length=255)
+    group = models.ForeignKey('StatisticGroup')
+    variable = models.ForeignKey('Variable', related_name="+")
+    value = models.FloatField()
+    datetime = models.DateTimeField(auto_now_add=True)
+
+
 class Prediction(models.Model):
     """Model containing probabilistic mappings from input to output values."""
     input_variable = models.ForeignKey('Variable', related_name='+')

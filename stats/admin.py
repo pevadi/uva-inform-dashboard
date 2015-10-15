@@ -8,3 +8,4 @@ class VariableValueAdmin(admin.ModelAdmin):
 admin.site.register(Variable)
 admin.site.register(VariableValue, VariableValueAdmin)
 admin.site.register(Prediction)
+admin.site.register(StatisticGroup)

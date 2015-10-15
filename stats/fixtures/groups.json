@@ -1,0 +1,1 @@
+[{"fields": {"name": "IKI_2014", "members": [], "label": "IKI 2014"}, "model": "stats.statisticgroup"}, {"fields": {"name": "IKI_2015_DASHBOARD", "members": [], "label": "IKI 2015 Dashboard"}, "model": "stats.statisticgroup"}, {"fields": {"name": "IKI_2015_NO_DASHBOARD", "members": [], "label": "IKI 2015 No Dashboard"}, "model": "stats.statisticgroup"}]
