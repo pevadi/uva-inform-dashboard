@@ -1,3 +1,4 @@
+{% load staticfiles %}
 <style>
 
 body {
@@ -11,8 +12,27 @@ body {
 	shape-rendering: crispEdges;
 }
 
-.x.axis path {
-	display: none;
+.slider .handle {
+  fill: #fff;
+  stroke: #000;
+  stroke-opacity: .5;
+  stroke-width: 1.25px;
+  cursor: crosshair;
+}
+
+.x.axis .domain {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: .3;
+  stroke-width: 10px;
+  stroke-linecap: round;
+}
+
+.x.axis .halo {
+  fill: none;
+  stroke: #ddd;
+  stroke-width: 8px;
+  stroke-linecap: round;
 }
 
 .line {
@@ -37,6 +57,11 @@ function {{ load_fn }}(container){
 	var xAxis = d3.svg.axis()
 		.scale(x)
 		.orient("bottom");
+
+	var brush = d3.svg.brush()
+		.x(x)
+		.extent([0, 0])
+		.on("brush", brushed);
 
 	var yAxis = d3.svg.axis()
 		.scale(y)
@@ -90,6 +115,33 @@ function {{ load_fn }}(container){
 		  .datum(data)
 		  .attr("class", "line")
 		  .attr("d", line);
+
+		var slider = svg.append("g")
+			.attr("class", "slider")
+			.call(brush);
+		slider.selectAll(".extent,.resize")
+			.remove();
+		slider.select(".background")
+			.attr("height", height);
+		var handle = slider.append("circle")
+			.attr("class", "handle")
+			.attr("transform", "translate(0," + height + ")")
+			.attr("r", 9);
+		slider
+			.call(brush.event)
+		  .transition() // gratuitous intro!
+			.duration(750)
+			.call(brush.extent([5, 5]))
+			.call(brush.event);
+		function brushed() {
+		  var value = brush.extent()[0];
+		  if (d3.event.sourceEvent) { // not a programmatic event
+			value = x.invert(d3.mouse(this)[0]);
+			brush.extent([value, value]);
+		  }
+		  handle.attr("cx", x(value));
+		  console.log(value)
+		}
 	//});
 }
 </script>
