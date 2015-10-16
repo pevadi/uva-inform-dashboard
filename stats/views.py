@@ -43,3 +43,18 @@ def get_prediction_table(request, output_label):
             output_variable)
     # Return the table encoded in JSON
     return JsonResponse(table, safe=False)
+
+def get_variable_stats(request, variable_name):
+    """Returns the most recent values of a variable.
+
+    Parameters:
+        variable_name   -   The variable for which to lookup the values.
+    """
+    # Ensure the request uses the GET method.
+    if not request.method == "GET":
+        return HttpResponseNotAllowed(['GET'])
+    variable = get_object_or_404(Variable, name=variable_name)
+    # Fetch variable value history before current date
+    history = Statistics.objects.filter(variable=variable)
+    #TODO: Raw SQL: Fetch
+    pass

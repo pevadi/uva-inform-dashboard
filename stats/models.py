@@ -64,7 +64,18 @@ class Statistic(models.Model):
     group = models.ForeignKey('StatisticGroup')
     variable = models.ForeignKey('Variable', related_name="+")
     value = models.FloatField()
-    datetime = models.DateTimeField(auto_now_add=True)
+    datetime = models.DateTimeField(auto_now_add=True) # should be relative to epoch
+
+    def __unicode__(self):
+        return u"%s(%s): %s=%s [%s]" % (self.student, self.group,
+                self.variable.name, self.value, self.datetime,)
+
+    def __str__(self):
+        return unicode(self).encode('ascii', 'xmlcharrefreplace')
+
+    def __repr__(self):
+        return "Statistic(%s(%s): %s=%s [%s])" % (self.student, self.group,
+                self.variable.name, self.value, self.datetime,)
 
 
 class Prediction(models.Model):

@@ -20,4 +20,5 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^stats/', include('stats.urls', namespace="stats",
         app_name="stats")),
+    url(r'^$', "statviewer.views.render_dashboard", name="render"),
 ]
