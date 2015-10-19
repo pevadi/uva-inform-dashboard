@@ -10,6 +10,7 @@ class Activity(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     time = models.DateTimeField(null=True)
+    stored = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name_plural = "activities"
