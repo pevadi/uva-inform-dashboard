@@ -40,7 +40,7 @@ INSTALLED_APPS = (
 	'storage',
     'course',
     'stats',
-    'statviewer',
+    'viewer',
 )
 
 MIDDLEWARE_CLASSES = (
