@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest,\
         HttpResponseNotAllowed
 
-from .models import Variable, Prediction
+from .models import Variable, Prediction, Statistic, ValueBin
 
 def get_prediction_table(request, output_label):
     """Returns a 2D-array mapping output values to probabilities.
@@ -54,7 +54,6 @@ def get_variable_stats(request, variable_name):
     if not request.method == "GET":
         return HttpResponseNotAllowed(['GET'])
     variable = get_object_or_404(Variable, name=variable_name)
-    # Fetch variable value history before current date
-    history = Statistics.objects.filter(variable=variable)
-    #TODO: Raw SQL: Fetch
-    pass
+    value_bins = ValueBin.objects.filter(variable=variable).values(
+        'id','lower','upper','count')
+    return JsonResponse(list(value_bins), safe=False)
