@@ -12,27 +12,32 @@ body {
 	shape-rendering: crispEdges;
 }
 
+.slider .background {
+	fill: #F9CB9C;
+}
+
 .slider .handle {
   fill: #fff;
   stroke: #000;
   stroke-opacity: .5;
   stroke-width: 1.25px;
-  cursor: crosshair;
+  cursor: ew-resize;
+}
+
+.slider .handle:hover,
+.slider .handle:active{
+	fill: #000;
+	fill-opacity: .5;
 }
 
 .x.axis .domain {
   fill: none;
-  stroke: #000;
-  stroke-opacity: .3;
-  stroke-width: 10px;
-  stroke-linecap: round;
+  stroke: none;
 }
 
 .x.axis .halo {
   fill: none;
-  stroke: #ddd;
-  stroke-width: 8px;
-  stroke-linecap: round;
+  stroke: none;
 }
 
 .line {
@@ -41,95 +46,149 @@ body {
 	stroke-width: 1.5px;
 }
 
+rect.bar {
+	fill: #cfe2f3;
+}
+
+rect.bar:hover {
+	fill: #f9cb9c;
+	cursor: pointer;
+}
+
+rect.bar.active {
+	fill: #f9cb9c;
+	stroke: black;
+	stroke-width: 3px;
+}
 </style>
 <script>
 function {{ load_fn }}(container){
+	$(container).append($("<div>").addClass("stats-container"));
+	$(container).append($("<div>").addClass("prediction-container"));
+	{{ load_fn }}_stats(".stats-container");
+}
+
+function {{ load_fn }}_stats(container){
+	var margin = {top: 20, right: 20, bottom: 30, left: 50},
+		width = 400 - margin.left - margin.right,
+		height = 250 - margin.top - margin.bottom;
+
+	var sliderHeight = 20, sliderMargin = 5, sliderPadding = 3;
+	var plotHeight = height - sliderHeight - sliderMargin;
+
 	d3.json("/stats/avg_grade/", function(error, data) {
 		if (error) throw error;
 
-		var margin = {top: 20, right: 20, bottom: 30, left: 50},
-			width = 960 - margin.left - margin.right,
-			height = 500 - margin.top - margin.bottom;
+		data.forEach(function(d, i){
+			d['label'] = Math.round(10*(d.lower+d.upper)/2)/10;
+		})
 
-		var x = d3.scale.linear()
-			.range([0, width]);
+		var barWidth = width / data.length;
+
+		var x = d3.scale.ordinal()
+			.rangeBands([0, width], 0.1);
 
 		var y = d3.scale.linear()
-			.range([height, 0]);
+			.range([plotHeight, 0]);
+
+		x.domain(data.map(function(d) { return d.label }));
+		y.domain(d3.extent(data, function(d) { return d.count; }));
 
 		var xAxis = d3.svg.axis()
 			.scale(x)
 			.orient("bottom");
+
+		var yAxis = d3.svg.axis()
+			.scale(y)
+			.orient("left")
+			.ticks(5, "%");
+
+		var chart = d3.select(container).append("svg")
+			.attr("width", width +margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+		   .append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		var bar = chart.selectAll("g")
+			.data(data)
+		  .enter().append("g")
+			.attr("transform", function(d, i) {
+				return "translate(" + x(d.label) + ",0)"; });
+
+		bar.append("rect")
+			.attr("class", "bar")
+			.attr("data-label", function(d){ return d.label })
+			.attr("data-bin", function(d){ return d.id })
+			.attr("y", function(d){ return y(d.count) })
+			.attr("height", function(d){ return plotHeight-y(d.count) })
+			.attr("width", x.rangeBand())
+			.on("click", function(){ update_active(this) });
+
+		chart.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(xAxis);
+
+		chart.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 6)
+			.attr("dy", ".71em")
+			.style("text-anchor", "end")
+			.text("Frequency");
 
 		var brush = d3.svg.brush()
 			.x(x)
 			.extent([0, 0])
 			.on("brush", brushed);
 
-		var yAxis = d3.svg.axis()
-			.scale(y)
-			.orient("left");
-
-		var line = d3.svg.line()
-			.x(function(d) { return x(d.lower+((d.upper-d.lower)/2)); })
-			.y(function(d) { return y(d.count); });
-
-		var svg = d3.select(container).append("svg")
-			.attr("width", width + margin.left + margin.right)
-			.attr("height", height + margin.top + margin.bottom)
-		  .append("g")
-			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-
-		var slider = svg.append("g")
+		var slider = chart.append("g")
 			.attr("class", "slider")
 			.call(brush);
+
 		slider.selectAll(".extent,.resize")
 			.remove();
+
 		slider.select(".background")
-			.attr("height", height);
-		var handle = slider.append("circle")
+			.style("visibility", "visible")
+			.style("cursor", "pointer")
+			.attr("y", height-sliderHeight)
+			.attr("height", sliderHeight);
+
+		var handle = slider.append("rect")
 			.attr("class", "handle")
-			.attr("transform", "translate(0," + height + ")")
-			.attr("r", 9);
+			.attr("y", height-sliderHeight+sliderPadding)
+			.attr("width", x.rangeBand())
+			.attr("height", sliderHeight-(2*sliderPadding));
 		slider
-			.call(brush.event)
-			.transition() // gratuitous intro!
-			.duration(750)
-			.call(brush.extent([5, 5]))
+			.call(brush.extent([2.5, 2.5]))
 			.call(brush.event);
 
-		x.domain(d3.extent(data, function(d) { return d.lower+((d.upper-d.lower)/2); }));
-		y.domain(d3.extent(data, function(d) { return d.count; }));
-
-		svg.append("path")
-			.datum(data)
-			.attr("class", "line")
-			.attr("d", line);
-
-		svg.append("g")
-		.attr("class", "x axis")
-		.attr("transform", "translate(0," + height + ")")
-		.call(xAxis);
-
-		svg.append("g")
-		.attr("class", "y axis")
-		.call(yAxis)
-		.append("text")
-		.attr("transform", "rotate(-90)")
-		.attr("y", 6)
-		.attr("dy", ".71em")
-		.style("text-anchor", "end")
-		.text("Frequency");
 
 		function brushed() {
 			var value = brush.extent()[0];
 			if (d3.event.sourceEvent) { // not a programmatic event
-				value = x.invert(d3.mouse(this)[0]);
+				var coord = d3.mouse(this)[0];
+				var distances = x.range().map(function(r,i){
+					return Math.abs(r + (x.rangeBand()/2) - coord);
+				});
+				var i = distances.indexOf(Math.min.apply(Math,distances));
+				value = x.domain()[i];
+				update_active("rect[data-label='"+value+"']");
+				//console.log("value:"+value+" , x:" + x(""+value));
 				brush.extent([value, value]);
 			}
-			handle.attr("cx", x(value));
-			console.log(value)
+			if(x(""+value)){
+				update_active("rect[data-label='"+value+"']");
+			}
+		}
+
+		function update_active(bar){
+			d3.select('.bar.active').classed("active",false)
+			d3.select(bar).attr("class","bar active")
+			handle.attr("x", x(d3.select(bar).attr("data-label")));
 		}
 	});
 }
