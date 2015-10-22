@@ -1,10 +1,10 @@
-<script>
-window.jQuery || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js">\x3C/script>');
-$(function(){
-	var href = $("a > span").filter(function(){
-		return $(this).text() == "__dashboard__"
-	}).parent().attr("href")
-	$("#__dashboard__").src=href
-})
-</script>
-<iframe id="__dashboard__"></iframe>
+<!DOCTYPE html>
+<html>
+	<head><title>Framed</title></head>
+	<body>
+		<h2>Frame loaded</h2>
+		<script>
+			alert(document.location.search);
+		</script>
+	</body>
+</html>
