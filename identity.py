@@ -34,9 +34,17 @@ def identity_required(func):
                     user, course)
                 request.authenticated_course = course
                 request.authenticated_user = user
-                return func(request, *args, **kwargs)
+                request.session['authenticated_course'] = course
+                request.session['authenticated_user'] = user
             else:
                 return HttpResponseBadRequest()
+
+        if ('authenticated_course' in request.session and
+                'authenticated_user' in request.session):
+            return func(request, *args, **kwargs)
+        else:
+            return HttpResponseBadRequest()
+
     return inner
 
 def generate_signed_params(user, course, timestamp=None):
