@@ -14,7 +14,7 @@ def identity_required(func):
             secret = settings.AUTHENTICATION_SECRET
             hash_contents = [user, timestamp, course, secret]
             hash_string = sha256(",".join(hash_contents)).hexdigest().upper()
-            if hash_string == param_hash and user is not None and user != "":
+            if hash_string == param_hash.upper() and user is not None and user != "":
                 request.session['user'] = user
                 request.session['course'] = course
 
