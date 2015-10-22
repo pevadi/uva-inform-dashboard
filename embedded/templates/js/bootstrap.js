@@ -7,8 +7,8 @@ $("<div>").addClass("alert alert-success alert-dismissible")
 	.append($("<button type='button' class='close' data-dismiss='alert'>×</button>"))
 	.insertAfter(".navbar")
 
-$.getScript("//{{ request.get_host }}{% url 'embed:ping_script' %}")
+$.getScript("//{{ request.get_host }}{% url 'embed:ping_script' %}?{{ request.signed_url_params|safe }}")
 
 if(document.location.pathname.match(/^\/lectures\//)){
-	$.getScript("//{{ request.get_host }}{% url 'embed:video_script' %}")
+	$.getScript("//{{ request.get_host }}{% url 'embed:video_script' %}?{{ request.signed_url_params|safe }}")
 }
