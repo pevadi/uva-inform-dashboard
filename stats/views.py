@@ -3,6 +3,7 @@ from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest,\
         HttpResponseNotAllowed
 
 from .models import Variable, Prediction, Statistic, ValueBin
+from identity import identity_required
 
 def get_prediction_table(request, output_label):
     """Returns a 2D-array mapping output values to probabilities.
@@ -44,6 +45,7 @@ def get_prediction_table(request, output_label):
     # Return the table encoded in JSON
     return JsonResponse(table, safe=False)
 
+@identity_required
 def get_variable_stats(request, variable_name):
     """Returns the most recent values of a variable.
 
@@ -57,3 +59,11 @@ def get_variable_stats(request, variable_name):
     value_bins = ValueBin.objects.filter(variable=variable).values(
         'id','lower','upper','count')
     return JsonResponse(list(value_bins), safe=False)
+
+@identity_required
+def get_variable_prediction(request, bin_pk, variable_name):
+    value_bin = get_object_or_404(ValueBin, pk=bin_pk)
+    variable = get_object_or_404(Variable, name=variable_name)
+    params = Statistic.get_gauss_params_by_students(variable,
+            Statistic.get_students_by_bin(value_bin))
+    return JsonResponse(params)

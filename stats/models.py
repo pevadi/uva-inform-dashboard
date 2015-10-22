@@ -47,14 +47,16 @@ class Variable(models.Model):
         for value_history_item in value_history:
             # Determine the attached student
             student_id = value_history_item.student
-            _student, _created = Student.objects.get_or_create(
+            student, _created = Student.objects.get_or_create(
                 identification=student_id, defaults={"label": student_id})
             # Determine the attached course groups. Technically someone could
             #  be in multiple groups in one course.
             groups = CourseGroup.get_groups_by_date(
                 value_history_item.datetime.date(),
                 course=self.course)
+
             for group in groups:
+                group.members.add(student)
                 value_history_item.group = group
         # Update the database by adding the new ValueHistory instances
         ValueHistory.objects.bulk_create(value_history)
@@ -121,17 +123,12 @@ class Variable(models.Model):
 
         # For each bin, recalculate the count, mean and stddev stats.
         for value_bin in value_bins:
-            count, mean, stddev = (
-                Statistic.objects.filter(
-                    value_bin=value_bin
-                ).aggregate(
-                    models.Count('value'),
-                    models.Avg('value'),
-                    models.StdDev('value')
-                ).values())
-            value_bin.count = count
-            value_bin.mean = mean
-            value_bin_stddev = stddev
+            bin_stats = (Statistic.objects.filter(value_bin=value_bin).
+                aggregate(count=models.Count('student'),
+                    mean=models.Avg('value'), stddev=models.StdDev('value')))
+            value_bin.count = bin_stats['count']
+            value_bin.mean = bin_stats['mean']
+            value_bin.stddev = bin_stats['stddev']
             value_bin.save()
         # Set the last consumed activity
         self.last_consumed_activity_pk = last_consumed.pk
@@ -253,15 +250,15 @@ class Statistic(models.Model):
     datetime = models.DateTimeField(auto_now_add=True) # should be relative to epoch
 
     @classmethod
-    def get_students_by_bin(cls, variable, value_bin, min_students=5):
+    def get_students_by_bin(cls, value_bin, min_students=5):
         if value_bin.count < min_students:
-            students = cls.objects.filter(variable=variable).extra(
+            students = cls.objects.filter(variable=value_bin.variable).extra(
                     select={'distance':"ABS( value - %s )"},
                     select_params=(value_bin.mean,),
                     order_by=['distance'])[0:min_students]
         else:
-            students = value_bin.statistics.all()
-        return students.value_list('student', flat=True)
+            students = cls.objects.filter(value_bin=value_bin)
+        return students.values_list('student', flat=True)
 
     @classmethod
     def get_values_by_students(cls, variable, students):
