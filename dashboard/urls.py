@@ -18,7 +18,10 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^embed/', include('embedded.urls', namespace="embed",
+        app_name="embed")),
     url(r'^stats/', include('stats.urls', namespace="stats",
         app_name="stats")),
+    url(r'^storage/store/?$', "storage.views.store_event", name="store_event"),
     url(r'^$', "viewer.views.render_dashboard", name="render"),
 ]
