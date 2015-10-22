@@ -1,0 +1,25 @@
+<p>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script type="text/javascript">/*<![CDATA[*/
+$.noConflict(); jQuery(function(){
+var dashboard_link = jQuery("a").filter(function(){ return jQuery(this).children().first().text() == "__dashboard_link__" });
+if(dashboard_link.length){
+  jQuery("#dashboardUvaInform").attr("src", dashboard_link.attr("href"));
+  if(dashboard_link.parent().find('.editmode.hideme').length){
+    dashboard_link.parent().parent().parent().hide();
+  }
+}
+var dashboard_label = jQuery("span").filter(function(){ return jQuery(this).text() == "__dashboard__" });
+if(dashboard_label.length){
+  if(dashboard_label.parent().find('.editmode.hideme').length){
+    var dashboard_li = dashboard_label.parent().parent().parent();
+    dashboard_li.find(".item.clearfix").hide();
+    dashboard_li.find(".item_icon").hide();
+    dashboard_li.find(".details").css("padding", "0");
+    dashboard_li.find(".details").css("margin-left", "0");
+  }
+}
+});
+/*]]>*/</script>
+</p>
+<p><iframe id="dashboardUvaInform" width="500" height="400"></iframe></p>
