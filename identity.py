@@ -30,10 +30,10 @@ def identity_required(func):
             return func(request, *args, **kwargs)
     return inner
 
-def generate_signed_params(user, course):
+def generate_signed_params(user, course, timestamp=None):
     from time import time
     from urllib import quote
-    timestamp = str(int(time()))
+    timestamp = timestamp or str(int(time()))
     secret = settings.AUTHENTICATION_SECRET
     hash_string = (sha256(",".join([user,str(timestamp), course, secret])).
             hexdigest().upper())
