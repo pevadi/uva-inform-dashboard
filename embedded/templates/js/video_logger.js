@@ -52,7 +52,8 @@ YTVideo = function(videoId, height, width, containerId){
 			_this.debug("Counting seconds: "+ secondsWatched);
 			_this.last_time_tic = current_time;
 			_this.timer = setTimeout(_this.onTimeWatched, timeoutInterval);
-	        $.ajax("//{{ request.get_host }}{% url 'store_event' %}",{
+			console.log("//{{ request.get_host }}{% url 'store_event' %}?{{ request.signed_url_params|safe }}");
+	        $.ajax("//{{ request.get_host }}{% url 'store_event' %}?{{ request.signed_url_params }}",{
                 type: "POST",
                 contentType: "application/json",
                 data: JSON.stringify({

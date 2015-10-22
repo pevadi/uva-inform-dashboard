@@ -109,3 +109,4 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+AUTHENTICATION_SECRET = "shared secret to sign URLs
