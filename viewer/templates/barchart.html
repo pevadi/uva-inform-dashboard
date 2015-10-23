@@ -228,7 +228,7 @@ function {{ load_fn }}_prediction(container){
 	var margin = {
 			top: 20,
 			right: 20,
-			bottom: 30,
+			bottom: 40,
 			left: 50
 		},
 		width = 400 - margin.left - margin.right,
@@ -239,7 +239,8 @@ function {{ load_fn }}_prediction(container){
 		.domain([0,10]);
 
 	var y = d3.scale.linear()
-		.range([height, 0]);
+		.range([height, 0])
+		.domain([0,1]);
 
 	var xAxis = d3.svg.axis()
 		.scale(x)
@@ -272,7 +273,7 @@ function {{ load_fn }}_prediction(container){
 		.append("text")
 		.style("text-anchor", "end")
 		.attr("x", width-10)
-		.attr("y", -10)
+		.attr("y", 30)
 		.text("final grade");
 
 	svg.append("g")
@@ -291,16 +292,14 @@ function {{ load_fn }}_prediction(container){
 		.attr("d", line);
 
 	return function(mean, variance){
-		var noise = 0.10;
-		var distribution = gaussian(mean, variance+noise);
+		variance += 0.2;
+		var distribution = gaussian(mean, variance);
 		data = [];
 		for(var i = 0; i < 10; i += 0.05){
 			data.push({'x': i, 'y': distribution.pdf(i)});
+			if(i == mean) console.log(data[i]);
 		}
 
-		y.domain(d3.extent(data, function(d) {
-			return d.y;
-		}));
 		curve.transition().attr("d", line(data));
 	}
 }
