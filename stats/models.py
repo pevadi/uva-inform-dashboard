@@ -1,6 +1,9 @@
 """Database models used in the prediction app."""
 from django.db import models
+from django.utils import timezone
 from course.models import Student, CourseGroup
+
+from datetime import datetime
 
 import math
 
@@ -58,6 +61,13 @@ class Variable(models.Model):
             for group in groups:
                 group.members.add(student)
                 value_history_item.group = group
+                # Set course timestamp relative to start
+                value_history_item.course_datetime = (
+                    value_history_item.datetime -
+                    timezone.make_aware(
+                        datetime.combine(group.start_date,
+                            datetime.min.time())))
+
         # Update the database by adding the new ValueHistory instances
         ValueHistory.objects.bulk_create(value_history)
 
@@ -69,8 +79,13 @@ class Variable(models.Model):
         max_value = float('-Inf')
         min_value = float('Inf')
         for statistic in statistics:
-            value = statistic.value
+            # Set course timestamp relative to start
+            statistic.course_datetime = (statistic.datetime -
+                    timezone.make_aware(
+                        datetime.combine(
+                            statistic.group.start_date, datetime.min.time())))
             # Update the max and min value found if needed.
+            value = statistic.value
             max_value = value if max_value < value else max_value
             min_value = value if min_value > value else min_value
 
@@ -208,7 +223,7 @@ class AvgGradeVariable(Variable):
         from course.models import CourseGroup
         annotated_stats = (ValueHistory.objects.filter(variable=self).
             values('student','group').
-            annotate(when=models.Max('datetime'),avg=models.Avg('value')))
+            annotate(when=models.Max('datetime'), avg=models.Avg('value')))
 
         statistics = []
         for value_history in annotated_stats:
@@ -220,12 +235,14 @@ class AvgGradeVariable(Variable):
                 datetime=value_history['when']))
         return statistics
 
+
 class ValueHistory(models.Model):
     """Model containing all calculated raw values for each variable"""
     student = models.CharField(max_length=255)
     group = models.ForeignKey('course.CourseGroup')
     variable = models.ForeignKey('Variable', related_name="+")
     value = models.FloatField()
+    course_datetime = models.DurationField()
     datetime = models.DateTimeField(auto_now_add=True) # should be relative to epoch
 
 
@@ -245,6 +262,7 @@ class Statistic(models.Model):
     variable = models.ForeignKey('Variable', related_name="+")
     value_bin = models.ForeignKey('ValueBin', blank=True)
     value = models.FloatField()
+    course_datetime = models.DurationField()
     datetime = models.DateTimeField(auto_now_add=True) # should be relative to epoch
 
     @classmethod
