@@ -1,4 +1,7 @@
 from django.db import models
+from django.utils import timezone
+
+from datetime import datetime
 
 class Student(models.Model):
     label = models.CharField(max_length=255)
@@ -42,6 +45,11 @@ class CourseGroup(models.Model):
     def get_groups_by_date(cls, date, **kwargs):
         return cls.objects.filter(start_date__lte=date,
                 end_date__gte=date, **kwargs)
+
+    def calculate_course_datetime(self, datetime_value=None):
+        datetime_value = datetime_value or timezone.now()
+        return datetime_value - timezone.make_aware(datetime.combine(
+            self.start_date, datetime.min.time()))
 
     def natural_key(self):
         return (self.name,)

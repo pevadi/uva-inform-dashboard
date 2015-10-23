@@ -6,6 +6,4 @@ class ValueHistoryAdmin(admin.ModelAdmin):
             'datetime')
 
 admin.site.register(AvgGradeVariable)
-admin.site.register(ValueBin)
 admin.site.register(ValueHistory, ValueHistoryAdmin)
-admin.site.register(Statistic)

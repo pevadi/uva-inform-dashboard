@@ -24,8 +24,7 @@ class Variable(models.Model):
 
         Based on new storage.models.Activity instances new observed values for
         this variable are calculated. These values are added as ValueHistory
-        and Statistic instances. ValueBin instances linked to this variable are
-        updated and if necessary redefined.
+        instances.
 
         The calculation of variable values based on storage data is delegated
         to the `calculate_values_from_activities` function of subclasses. This
@@ -71,79 +70,6 @@ class Variable(models.Model):
         # Update the database by adding the new ValueHistory instances
         ValueHistory.objects.bulk_create(value_history)
 
-        # Calculate new statistic values based on value history.
-        statistics = self.calculate_statistics_from_values()
-        # Init reference to store the maximum and minimum value found in the
-        #  extracted values. These will determine if all statistic values fit
-        #  within the existing value bins for this variable.
-        max_value = float('-Inf')
-        min_value = float('Inf')
-        for statistic in statistics:
-            # Set course timestamp relative to start
-            statistic.course_datetime = (statistic.datetime -
-                    timezone.make_aware(
-                        datetime.combine(
-                            statistic.group.start_date, datetime.min.time())))
-            # Update the max and min value found if needed.
-            value = statistic.value
-            max_value = value if max_value < value else max_value
-            min_value = value if min_value > value else min_value
-
-        # Retrieve the maximum and minimum values of the current value bins
-        # If no bins were created yet, these values were default to None.
-        value_bin_min, value_bin_max = ValueBin.objects.filter(variable=self).\
-                aggregate(models.Min('lower'), models.Max('upper')).values()
-
-        # If the max and min of the extracted values exceed the bin values.
-        if (value_bin_min is None or value_bin_max is None or
-                math.isnan(value_bin_min) or math.isnan(value_bin_max) or
-                min_value < value_bin_min or max_value > value_bin_max):
-            # Remove the current bins for this variable.
-            ValueBin.objects.filter(variable=self).delete()
-            # Recalculate the `Variable.num_bins` number of bins such that they
-            #  divide the value range into equal parts.
-            bin_size = (max_value-min_value)/float(self.num_bins)
-            bin_fn = lambda x: round(min_value + x * bin_size, 2)
-            lower_points = map(bin_fn, range(self.num_bins))
-            upper_points = map(bin_fn, range(1, self.num_bins+1))
-            value_bins = []
-            # Using the calculated boundaries, create the new bins.
-            # Note: this cannot be done in bulk as we'll need the pk to be set.
-            for index in range(self.num_bins):
-                value_bins.append(ValueBin.objects.create(
-                    variable=self,
-                    lower=lower_points[index],
-                    upper=upper_points[index]
-                ))
-        else:
-            # Retrieve the current bins and use those.
-            value_bins = ValueBin.objects.filter(variable=self)
-
-        # Assign the new statistic instances to each bin, where the value of
-        # the instance must lie between the lower and upper bound of the bin.
-        for value_bin in value_bins:
-            for statistic_instance in statistics:
-                value = round(statistic_instance.value, 2)
-                if value_bin.lower == min_value:
-                    if value <= value_bin.upper and value >= value_bin.lower:
-                        statistic_instance.value_bin = value_bin
-                else:
-                    if value <= value_bin.upper and value > value_bin.lower:
-                        statistic_instance.value_bin = value_bin
-
-        # Update the database by replacing the Statistic instances for this
-        # variable.
-        Statistic.objects.filter(variable=self).delete()
-        Statistic.objects.bulk_create(statistics)
-
-        # For each bin, recalculate the count and mean stats.
-        for value_bin in value_bins:
-            bin_stats = (Statistic.objects.filter(value_bin=value_bin).
-                aggregate(count=models.Count('student'),
-                    mean=models.Avg('value')))
-            value_bin.count = bin_stats['count']
-            value_bin.mean = bin_stats['mean']
-            value_bin.save()
         # Set the last consumed activity
         self.last_consumed_activity_pk = last_consumed.pk
         self.save()
@@ -170,17 +96,16 @@ class Variable(models.Model):
         """
         raise NotImplementedError()
 
-    def calculate_statistics_from_values(self):
+    def calculate_statistics_from_values(self, value_history):
         """Calculates the appropriate statistics based on the value history.
 
-        This function initializes statistics instances based on ValueHistory
-        queries. The Statistic instances must not yet be created in the DB. The
-        value_bin field will be set later, all other fields are set by this
-        function. The returned instances will replace the current Statistic
-        instances for this variable.
+        This function calculates variable statistics based on ValueHistory
+        queries. This function returns a list of dictionaries containing all
+        fields from the ValueHistory instances but with the `value` slot set to
+        the calculated statistic.
 
         Returns:
-            A list of Statistic instances.
+            A list of dictionaries containing the statistics.
         """
         raise NotImplementedError()
 
@@ -219,21 +144,10 @@ class AvgGradeVariable(Variable):
                 last_consumed_activity = activity
         return values, last_consumed_activity
 
-    def calculate_statistics_from_values(self):
+    def calculate_statistics_from_values(self, value_history):
         from course.models import CourseGroup
-        annotated_stats = (ValueHistory.objects.filter(variable=self).
-            values('student','group').
-            annotate(when=models.Max('datetime'), avg=models.Avg('value')))
-
-        statistics = []
-        for value_history in annotated_stats:
-            statistics.append(Statistic(
-                student=value_history['student'],
-                group=CourseGroup.objects.get(pk=value_history['group']),
-                variable=self,
-                value=value_history['avg'],
-                datetime=value_history['when']))
-        return statistics
+        return (value_history.values('student','group').
+            annotate(value=models.Avg('value')))
 
 
 class ValueHistory(models.Model):
@@ -244,57 +158,4 @@ class ValueHistory(models.Model):
     value = models.FloatField()
     course_datetime = models.DurationField()
     datetime = models.DateTimeField(auto_now_add=True) # should be relative to epoch
-
-
-class ValueBin(models.Model):
-    """Model containing value bins for Statistic values."""
-    variable = models.ForeignKey('Variable', related_name="+")
-    lower = models.FloatField()
-    upper = models.FloatField()
-    count = models.PositiveSmallIntegerField(null=True, blank=True)
-    mean = models.FloatField(null=True, blank=True)
-
-
-class Statistic(models.Model):
-    """Model containing calculated statistics for each variable."""
-    student = models.CharField(max_length=255)
-    group = models.ForeignKey('course.CourseGroup', blank=True)
-    variable = models.ForeignKey('Variable', related_name="+")
-    value_bin = models.ForeignKey('ValueBin', blank=True)
-    value = models.FloatField()
-    course_datetime = models.DurationField()
-    datetime = models.DateTimeField(auto_now_add=True) # should be relative to epoch
-
-    @classmethod
-    def get_students_by_bin(cls, value_bin, min_students=5):
-        if value_bin.count < min_students:
-            students = cls.objects.filter(variable=value_bin.variable).extra(
-                    select={'distance':"ABS( value - %s )"},
-                    select_params=(value_bin.mean,),
-                    order_by=['distance'])[0:min_students]
-        else:
-            students = cls.objects.filter(value_bin=value_bin)
-        return students.values_list('student', flat=True)
-
-    @classmethod
-    def get_values_by_students(cls, variable, students):
-        return cls.objects.filter(variable=variable, student__in=students).\
-                values_list('value', flat=True)
-
-    @classmethod
-    def get_gauss_params_by_students(cls, variable, students):
-        return cls.objects.filter(variable=variable, student__in=students).\
-                aggregate(mean=models.Avg('value'),
-                        variance=models.Variance('value'))
-
-    def __unicode__(self):
-        return u"%s(%s): %s=%s [%s]" % (self.student, self.group,
-                self.variable.name, self.value, self.datetime,)
-
-    def __str__(self):
-        return unicode(self).encode('ascii', 'xmlcharrefreplace')
-
-    def __repr__(self):
-        return "Statistic(%s(%s): %s=%s [%s])" % (self.student, self.group,
-                self.variable.name, self.value, self.datetime,)
 
