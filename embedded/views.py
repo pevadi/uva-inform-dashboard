@@ -7,7 +7,6 @@ from identity import identity_required
 @identity_required
 def bootstrap(request):
     return render(request, "js/bootstrap.js",
-        { "user": request.session.get("user")},
         content_type="application/javascript")
 
 @xframe_options_exempt
