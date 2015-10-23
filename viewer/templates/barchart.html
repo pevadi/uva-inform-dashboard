@@ -5,6 +5,10 @@ body {
 	  font: 10px sans-serif;
 }
 
+.stats-container, .prediction-container {
+	float: left;
+}
+
 .axis path,
 .axis line {
 	fill: none;
@@ -35,6 +39,10 @@ body {
   stroke: none;
 }
 
+.x.axis.lined .domain {
+  stroke: #000;
+}
+
 .x.axis .halo {
   fill: none;
   stroke: none;
@@ -61,15 +69,18 @@ rect.bar.active {
 	stroke-width: 3px;
 }
 </style>
+<script type='text/javascript' src="{% static 'js/gaussian.js' %}"></script>
 <script>
 function {{ load_fn }}(container){
 	$(container).append($("<div>").addClass("stats-container"));
 	$(container).append($("<div>").addClass("prediction-container"));
-	{{ load_fn }}_stats(".stats-container");
+	var update_fn = {{ load_fn }}_prediction(".prediction-container");
+	{{ load_fn }}_stats(".stats-container", update_fn);
+	update_fn(6,0.2);
 }
 
-function {{ load_fn }}_stats(container){
-	var margin = {top: 20, right: 20, bottom: 30, left: 50},
+function {{ load_fn }}_stats(container, update_fn){
+	var margin = {top: 20, right: 20, bottom: 40, left: 50},
 		width = 400 - margin.left - margin.right,
 		height = 250 - margin.top - margin.bottom;
 
@@ -79,9 +90,19 @@ function {{ load_fn }}_stats(container){
 	d3.json("/stats/avg_grade/", function(error, data) {
 		if (error) throw error;
 
+		var total_count = 0;
+
+		var predictions = {}
+
+		data.forEach(function(d, i){
+			total_count += d['count'];
+			predictions[""+d['id']] = d['predictions'];
+		});
+
 		data.forEach(function(d, i){
 			d['label'] = Math.round(10*(d.lower+d.upper)/2)/10;
-		})
+			d.count = d.count / total_count
+		});
 
 		var barWidth = width / data.length;
 
@@ -127,7 +148,12 @@ function {{ load_fn }}_stats(container){
 		chart.append("g")
 			.attr("class", "x axis")
 			.attr("transform", "translate(0," + height + ")")
-			.call(xAxis);
+			.call(xAxis)
+			.append("text")
+			.style("text-anchor", "end")
+			.attr("x", width-10)
+			.attr("y", sliderHeight+10)
+			.text("average grade");
 
 		chart.append("g")
 			.attr("class", "y axis")
@@ -137,7 +163,7 @@ function {{ load_fn }}_stats(container){
 			.attr("y", 6)
 			.attr("dy", ".71em")
 			.style("text-anchor", "end")
-			.text("Frequency");
+			.text("# students");
 
 		var brush = d3.svg.brush()
 			.x(x)
@@ -189,7 +215,93 @@ function {{ load_fn }}_stats(container){
 			d3.select('.bar.active').classed("active",false)
 			d3.select(bar).attr("class","bar active")
 			handle.attr("x", x(d3.select(bar).attr("data-label")));
+			params = predictions[d3.select(bar).attr("data-bin")]["avg_grade"];
+			update_fn(params['mean'], params['variance']);
 		}
 	});
+}
+
+function {{ load_fn }}_prediction(container){
+	var data = [];
+
+	// line chart based on http://bl.ocks.org/mbostock/3883245
+	var margin = {
+			top: 20,
+			right: 20,
+			bottom: 30,
+			left: 50
+		},
+		width = 400 - margin.left - margin.right,
+		height = 250 - margin.top - margin.bottom;
+
+	var x = d3.scale.linear()
+		.range([0, width])
+		.domain([0,10]);
+
+	var y = d3.scale.linear()
+		.range([height, 0]);
+
+	var xAxis = d3.svg.axis()
+		.scale(x)
+		.orient("bottom")
+		.ticks(10);
+
+	var yAxis = d3.svg.axis()
+		.scale(y)
+		.orient("left")
+		.ticks(10, "%");
+
+	var line = d3.svg.line()
+		.x(function(d) {
+			return x(d.x);
+		})
+		.y(function(d) {
+			return y(d.y);
+		});
+
+	var svg = d3.select("body").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	svg.append("g")
+		.attr("class", "x axis lined")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis)
+		.append("text")
+		.style("text-anchor", "end")
+		.attr("x", width-10)
+		.attr("y", -10)
+		.text("final grade");
+
+	svg.append("g")
+		.attr("class", "y axis")
+		.call(yAxis)
+		.append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", 6)
+		.attr("dy", ".71em")
+		.style("text-anchor", "end")
+		.text("probability");
+
+	var curve = svg.append("path")
+		.datum(data)
+		.attr("class", "line")
+		.attr("d", line);
+
+	return function(mean, variance){
+		var noise = 0.10;
+		var distribution = gaussian(mean, variance+noise);
+		data = [];
+		for(var i = 0; i < 10; i += 0.05){
+			data.push({'x': i, 'y': distribution.pdf(i)});
+		}
+
+		y.domain(d3.extent(data, function(d) {
+			return d.y;
+		}));
+		curve.transition().attr("d", line(data));
+	}
 }
 </script>

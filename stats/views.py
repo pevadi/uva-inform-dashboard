@@ -56,9 +56,20 @@ def get_variable_stats(request, variable_name):
     if not request.method == "GET":
         return HttpResponseNotAllowed(['GET'])
     variable = get_object_or_404(Variable, name=variable_name)
-    value_bins = ValueBin.objects.filter(variable=variable).values(
-        'id','lower','upper','count')
-    return JsonResponse(list(value_bins), safe=False)
+    value_bins = ValueBin.objects.filter(variable=variable)
+    bin_stats = []
+    for value_bin in value_bins:
+        bin_stats.append({
+            'id': value_bin.pk,
+            'lower': value_bin.lower,
+            'upper': value_bin.upper,
+            'count': value_bin.count,
+            'predictions': {
+                variable_name: Statistic.get_gauss_params_by_students(variable,
+                    Statistic.get_students_by_bin(value_bin))
+            }
+        });
+    return JsonResponse(bin_stats, safe=False)
 
 @identity_required
 def get_variable_prediction(request, bin_pk, variable_name):

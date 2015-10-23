@@ -121,14 +121,13 @@ class Variable(models.Model):
         Statistic.objects.filter(variable=self).delete()
         Statistic.objects.bulk_create(statistics)
 
-        # For each bin, recalculate the count, mean and stddev stats.
+        # For each bin, recalculate the count and mean stats.
         for value_bin in value_bins:
             bin_stats = (Statistic.objects.filter(value_bin=value_bin).
                 aggregate(count=models.Count('student'),
-                    mean=models.Avg('value'), stddev=models.StdDev('value')))
+                    mean=models.Avg('value')))
             value_bin.count = bin_stats['count']
             value_bin.mean = bin_stats['mean']
-            value_bin.stddev = bin_stats['stddev']
             value_bin.save()
         # Set the last consumed activity
         self.last_consumed_activity_pk = last_consumed.pk
@@ -237,7 +236,6 @@ class ValueBin(models.Model):
     upper = models.FloatField()
     count = models.PositiveSmallIntegerField(null=True, blank=True)
     mean = models.FloatField(null=True, blank=True)
-    stddev = models.FloatField(null=True, blank=True)
 
 
 class Statistic(models.Model):
@@ -269,7 +267,7 @@ class Statistic(models.Model):
     def get_gauss_params_by_students(cls, variable, students):
         return cls.objects.filter(variable=variable, student__in=students).\
                 aggregate(mean=models.Avg('value'),
-                        stddev=models.StdDev('value'))
+                        variance=models.Variance('value'))
 
     def __unicode__(self):
         return u"%s(%s): %s=%s [%s]" % (self.student, self.group,
