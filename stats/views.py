@@ -56,7 +56,7 @@ def get_variable_stats(request, variable_name):
     if not request.method == "GET":
         return HttpResponseNotAllowed(['GET'])
     variable = get_object_or_404(Variable, name=variable_name)
-    value_bins = ValueBin.objects.filter(variable=variable)
+    value_bins = ValueBin.objects.filter(variable=variable).order_by('lower')
     bin_stats = []
     for value_bin in value_bins:
         bin_stats.append({
