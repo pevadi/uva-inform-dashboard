@@ -23,7 +23,7 @@ def store_event_in_remote_storage(event, user):
     return event
 
 def import_bb_gradecenter_export(export_file, fields=None, verb=None,
-        activity_type=None, course=None):
+        activity_type=None, course=None, timedelta=None):
     import csv
     from django.utils import timezone
     reader = csv.DictReader(export_file, delimiter=",", quoting=csv.QUOTE_NONE)
@@ -34,6 +34,9 @@ def import_bb_gradecenter_export(export_file, fields=None, verb=None,
     course = course or "//default"
     username_field = fields.pop(0)
     activities = []
+    timestamp = timezone.now()
+    if timedelta is not None:
+        timestamp = timestamp - timedelta
     for row in reader:
         for field in fields:
             activities.append(Activity(
@@ -45,6 +48,6 @@ def import_bb_gradecenter_export(export_file, fields=None, verb=None,
                 value=float(row[field]),
                 name=field,
                 description=field,
-                time=timezone.now()))
+                time=timestamp))
     Activity.objects.bulk_create(activities)
     return activities
