@@ -29,6 +29,9 @@ class Activity(models.Model):
         else:
             return None
 
+        if IgnoredUser.objects.filter(user=user).exists():
+            return None
+
         activity = statement['object']['id']
         verb = statement['verb']['id']
         name = statement['object']['definition']['name']['en-US']
@@ -73,3 +76,15 @@ class Activity(models.Model):
 
     def __repr__(self):
         return "Activity(%s)" % (self.verb,)
+
+class IgnoredUser(models.Model):
+    user = models.CharField(max_length=255)
+
+    def __unicode__(self):
+        return unicode(self.user)
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    def __repr__(self):
+        return "IgnoredUser(%s)" % (self,)

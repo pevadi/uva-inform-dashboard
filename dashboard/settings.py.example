@@ -109,4 +109,14 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-AUTHENTICATION_SECRET = "shared secret to sign URLs
+AUTHENTICATION_SECRET = "shared secret to sign URLs"
+
+STORE_IN_LRS = False
+from datetime import timedelta
+LRS_TIME_OFFSET = (lambda t: t - timedelta(seconds=30))
+
+LRS = {
+    'username': 'lrs username',
+    'password': 'lrs password',
+    'endpoint': 'lrs endpoint (i.e. .../xAPI/statements)',
+}

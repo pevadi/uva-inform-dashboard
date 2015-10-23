@@ -1,8 +1,10 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 
 from identity import identity_required
+from .helpers import store_event_in_remote_storage
 
 import json
 
@@ -13,11 +15,8 @@ def store_event(request):
         event = json.loads(request.body)
     except ValueError:
         return HttpResponseBadRequest()
-    event["actor"] = {
-        "objectType": "Agent",
-        "account": {
-            "homePage": "https://secure.uva.nl",
-            "name": request.session.get("user")
-        }
-    }
-    return HttpResponse(json.dumps(event))
+
+    user = request.session.get("authenticated_user")
+    stored_event = store_event_in_remote_storage(event, user)
+
+    return HttpResponse(json.dumps(stored_event))

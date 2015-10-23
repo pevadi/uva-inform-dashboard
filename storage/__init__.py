@@ -48,19 +48,17 @@ class XAPIConnector(object):
     def submitStatement(self, jsonObject):
         """Submit a single statement."""
         try:
-            ##Validates that the verb is valid
-            #if(not dataValidation.validateVerb(jsonObject['verb'])):
-            #    raise ValueError("INVALID VERB: "+jsonObject['verb'])
-
             resp = requests.post(self._endpoint,
-                                        data=json.dumps(jsonObject),
-                                        auth=HTTPBasicAuth(self._userName,self._secret),
-                                        headers={"Content-Type":"application/json",
-                                                         self.VERSIONHEADER:self.VERSION})
+                data=json.dumps(jsonObject),
+                auth=HTTPBasicAuth(self._userName,self._secret),
+                headers={"Content-Type":"application/json",
+                     self.VERSIONHEADER:self.VERSION})
 
         except IOError as e:
             if self.logger is not None:
                 self.logger.error(e)
+        else:
+            return resp
 
 
     def submitStatementList(self, jsonObjectList):

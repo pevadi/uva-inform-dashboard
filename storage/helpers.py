@@ -1,4 +1,26 @@
+from django.conf import settings
+from django.http import HttpResponse
+
 from .models import Activity
+from .models import IgnoredUser
+from storage import XAPIConnector
+
+def store_event_in_remote_storage(event, user):
+    if not settings.STORE_IN_LRS:
+        return None
+    elif IgnoredUser.objects.filter(user=user).exists():
+        return HttpResponse(status=204)
+
+    event["actor"] = {
+        "objectType": "Agent",
+        "account": {
+            "homePage": "https://secure.uva.nl",
+            "name": user
+        }
+    }
+    xapi = XAPIConnector()
+    resp = xapi.submitStatement(event)
+    return event
 
 def import_bb_gradecenter_export(export_file, fields=None, verb=None,
         activity_type=None, course=None):
