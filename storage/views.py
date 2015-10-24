@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 
 from identity import identity_required
-from .helpers import store_event_in_remote_storage, VideoWatchEvent
+from .helpers import *
 
 import json
 
