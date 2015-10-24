@@ -16,7 +16,7 @@ class Variable(PolymorphicModel):
         ("AVG", "Use the average value"),
         ("SUM", "Use the cumulative value"),
         ("LAST", "Use the latest value"),
-        ("MAX", "Use the highest value")
+        ("MAX", "Use the highest value"),
         ("FIRST", "Use the first value"),
         ("MIN", "Use the lowest value"))
 
