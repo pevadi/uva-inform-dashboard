@@ -40,7 +40,11 @@ def store_video_watch_event(request):
         course=request.session.get("authenticated_course"))
     event.set_object(video_id)
     event.set_duration(seconds=duration)
-    event.store()
+    resp = event.store()
+    if resp is None:
+        return HttpResponse(status=204)
+    else:
+        return HttpResponse(resp.text)
 
 def store_webpage_ping_event(request):
     pass

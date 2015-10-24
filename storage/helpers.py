@@ -178,10 +178,9 @@ class XAPIEvent(object):
 
     def store(self):
         if not settings.STORE_IN_LRS:
-            print "Fake storing: ", self.statement()
             return None
         elif IgnoredUser.objects.filter(user=self.user).exists():
-            return HttpResponse(status=204)
+            return None
 
         xapi = XAPIConnector()
         resp = xapi.submitStatement(self.statement())
