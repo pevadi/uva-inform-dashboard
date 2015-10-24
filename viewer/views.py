@@ -9,8 +9,9 @@ from .helpers import generate_viewer_access_event
 @xframe_options_exempt
 def render_dashboard(request):
     user = request.session.get("authenticated_user")
-    store_event_in_remote_storage(
-        generate_viewer_access_event(),
-        user
-    )
+    if not request.user.is_staff:
+        store_event_in_remote_storage(
+            generate_viewer_access_event(),
+            user
+        )
     return render(request, "dashboard.html", {});

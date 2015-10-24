@@ -1,5 +1,31 @@
 from django.db import models
 
+class ActivityType(models.Model):
+    uri = models.URLField(max_length=255)
+
+    def __unicode__(self):
+        return unicode(self.uri)
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    def __repr__(self):
+        return "ActivityType(%s)" % (self,)
+
+
+class ActivityVerb(models.Model):
+    uri = models.URLField(max_length=255)
+
+    def __unicode__(self):
+        return unicode(self.uri)
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    def __repr__(self):
+        return "ActivityVerb(%s)" % (self,)
+
+
 class Activity(models.Model):
     user = models.CharField(max_length=255)
     course = models.URLField(max_length=255, blank=True)

@@ -54,17 +54,31 @@ body {
 	stroke-width: 1.5px;
 }
 
-rect.bar {
+.bargroup rect.bar {
 	fill: #cfe2f3;
 }
 
-rect.bar:hover {
+.bargroup.bar-you rect.bar {
+	fill: #03A9F4;
+}
+.bargroup:hover rect.bar {
 	fill: #f9cb9c;
 	cursor: pointer;
 }
+.bargroup.bar-you:hover{
+	cursor: pointer;
+}
+.bargroup.bar-you:hover rect.bar {
+	fill: #FF9800;
+}
 
-rect.bar.active {
+.bargroup.active rect.bar {
 	fill: #f9cb9c;
+	stroke: black;
+	stroke-width: 3px;
+}
+.bargroup.active.bar-you rect.bar {
+	fill: #FF9800;
 	stroke: black;
 	stroke-width: 3px;
 }
@@ -76,7 +90,6 @@ function {{ load_fn }}(container){
 	$(container).append($("<div>").addClass("prediction-container"));
 	var update_fn = {{ load_fn }}_prediction(".prediction-container");
 	{{ load_fn }}_stats(".stats-container", update_fn);
-	update_fn(6,0.2);
 }
 
 function {{ load_fn }}_stats(container, update_fn){
@@ -89,6 +102,9 @@ function {{ load_fn }}_stats(container, update_fn){
 
 	d3.json("/stats/avg_grade/", function(error, data) {
 		if (error) throw error;
+
+        var student_bin = data['student_bin'];
+        var data = data['bins'];
 
 		var total_count = 0;
 
@@ -133,17 +149,18 @@ function {{ load_fn }}_stats(container, update_fn){
 		var bar = chart.selectAll("g")
 			.data(data)
 		  .enter().append("g")
+            .attr("class", "bargroup")
+			.attr("data-label", function(d){ return d.label })
+			.attr("data-bin", function(d){ return d.id })
+			.on("click", function(){ update_active(this) })
 			.attr("transform", function(d, i) {
 				return "translate(" + x(d.label) + ",0)"; });
 
 		bar.append("rect")
 			.attr("class", "bar")
-			.attr("data-label", function(d){ return d.label })
-			.attr("data-bin", function(d){ return d.id })
 			.attr("y", function(d){ return y(d.count) })
 			.attr("height", function(d){ return plotHeight-y(d.count) })
-			.attr("width", x.rangeBand())
-			.on("click", function(){ update_active(this) });
+			.attr("width", x.rangeBand());
 
 		chart.append("g")
 			.attr("class", "x axis")
@@ -202,22 +219,36 @@ function {{ load_fn }}_stats(container, update_fn){
 				});
 				var i = distances.indexOf(Math.min.apply(Math,distances));
 				value = x.domain()[i];
-				update_active("rect[data-label='"+value+"']");
-				//console.log("value:"+value+" , x:" + x(""+value));
+				update_active("g[data-label='"+value+"']");
 				brush.extent([value, value]);
 			}
 			if(x(""+value)){
-				update_active("rect[data-label='"+value+"']");
+				update_active("g[data-label='"+value+"']");
 			}
 		}
 
 		function update_active(bar){
-			d3.select('.bar.active').classed("active",false)
-			d3.select(bar).attr("class","bar active")
+			d3.select('.bargroup.active').classed("active",false)
+			d3.select(bar).classed("active", true)
 			handle.attr("x", x(d3.select(bar).attr("data-label")));
-			params = predictions[d3.select(bar).attr("data-bin")]["avg_grade"];
-			update_fn(params['mean'], params['variance']);
+			params = predictions[d3.select(bar).attr("data-bin")];
+			update_fn(params);
 		}
+
+		var student_bar = d3.select("g[data-bin='"+student_bin+"']")
+            .classed("bar-you", true)
+            .append("text")
+            .style("font-size", (40/30)*x.rangeBand()+"px")
+            .style("font-weight", "bold")
+            .attr("y", function(d){ return y(d.count)+
+                (plotHeight-y(d.count) < 50 ?
+                    (-1/30)*x.rangeBand(): (35/30)*x.rangeBand()
+                )
+            })
+            .attr("x", (8/30)*x.rangeBand())
+            .text("*");
+
+		update_active("g[data-bin='"+student_bin+"']");
 	});
 }
 
@@ -291,7 +322,10 @@ function {{ load_fn }}_prediction(container){
 		.attr("class", "line")
 		.attr("d", line);
 
-	return function(mean, variance){
+	return function(params){
+        var variable = "final_grade";
+        var mean = params[variable]['mean']
+        var variance = params[variable]['variance']
 		variance += 0.2;
 		var distribution = gaussian(mean, variance);
 		data = [];

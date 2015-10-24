@@ -57,15 +57,15 @@ class Variable(models.Model):
                 value_history_item.datetime.date(),
                 course=self.course)
 
-            for group in groups:
-                group.members.add(student)
-                value_history_item.group = group
-                # Set course timestamp relative to start
-                value_history_item.course_datetime = (
-                    value_history_item.datetime -
-                    timezone.make_aware(
-                        datetime.combine(group.start_date,
-                            datetime.min.time())))
+            group = groups[0]
+            group.members.add(student)
+            value_history_item.group = group
+            # Set course timestamp relative to start
+            value_history_item.course_datetime = (
+                value_history_item.datetime -
+                timezone.make_aware(
+                    datetime.combine(group.start_date,
+                        datetime.min.time())))
 
         # Update the database by adding the new ValueHistory instances
         ValueHistory.objects.bulk_create(value_history)
@@ -125,17 +125,16 @@ class Variable(models.Model):
         return "Variable(%s)" % (self,)
 
 
-class AvgGradeVariable(Variable):
-
-    def __init__(self, *args, **kwargs):
-        kwargs['name'] = 'avg_grade'
-        super(AvgGradeVariable, self).__init__(*args, **kwargs)
+class AveragingVariable(Variable):
+    types = models.ManyToManyField('storage.ActivityType')
+    verbs = models.ManyToManyField('storage.ActivityVerb')
 
     def calculate_values_from_activities(self, activities):
         last_consumed_activity = None
         values = []
         for activity in activities:
-            if activity.verb == "http://adlnet.gov/expapi/verbs/scored":
+            if (self.types.filter(uri=activity.type).exists() and
+                    self.verbs.filter(uri=activity.verb).exists()):
                 values.append(ValueHistory(
                     student=activity.user,
                     variable=self,

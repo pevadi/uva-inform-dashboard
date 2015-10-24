@@ -20,8 +20,8 @@ def get_variable_stats(request, variable_name):
     if not request.method == "GET":
         return HttpResponseNotAllowed(['GET'])
     variable = get_object_or_404(Variable, name=variable_name)
-    if variable.avggradevariable:
-        variable = variable.avggradevariable
+    if variable.averagingvariable:
+        variable = variable.averagingvariable
 
     # Retrieve current group context
     try:
@@ -40,7 +40,7 @@ def get_variable_stats(request, variable_name):
 
     from django.utils import timezone
     from datetime import timedelta
-    fake_date = timezone.now() + timedelta(weeks=2)
+    fake_date = timezone.now() + timedelta(weeks=3)
 
     # Calculate course-relative time context
     course_datetime_now = group.calculate_course_datetime(fake_date)
@@ -53,12 +53,19 @@ def get_variable_stats(request, variable_name):
     # Calculate variable statistics
     statistics = variable.calculate_statistics_from_values(value_history)
 
+    # Placeholder for the viewer's statement, as well as the bin it falls in.
+    student_statistic = None
+    student_bin = 0
+
     # Init reference to store the maximum and minimum value found in the
     #  extracted values. These will determine if all statistic values fit
     #  within the existing value bins for this variable.
     max_value = float('-Inf')
     min_value = float('Inf')
     for statistic in statistics:
+        if statistic['student'] == student.identification:
+            student_statistic = statistic
+
         # Update the max and min value found if needed.
         value = statistic['value']
         max_value = value if max_value < value else max_value
@@ -79,13 +86,16 @@ def get_variable_stats(request, variable_name):
             assignment_fn = (lambda s: s['value'] <= upper_points[index] and
                     s['value'] > lower_points[index])
 
+        # Check if we found the viewer's bin
+        if assignment_fn(student_statistic):
+            student_bin = index
+
         predictions = {}
-        for output_variable in [variable]:
+        for output_variable in AveragingVariable.objects.filter(type='OUT'):
             predictions[output_variable.name] = (
                 get_gauss_params(output_variable,
                     student__in=get_students_by_variable_values(variable,
-                        lower_points[index], upper_points[index], index,
-                        course_datetime__lte=course_datetime_now)))
+                        lower_points[index], upper_points[index], index)))
 
         bin_stats.append({
             'id': index,
@@ -94,4 +104,6 @@ def get_variable_stats(request, variable_name):
             'count': len(filter(assignment_fn, statistics)),
             'predictions': predictions
         });
-    return JsonResponse(bin_stats, safe=False)
+
+    return JsonResponse({"student_bin": student_bin, "bins": bin_stats},
+            safe=False)

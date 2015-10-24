@@ -36,7 +36,7 @@ class CourseGroup(models.Model):
     course = models.ForeignKey('Course')
     start_date = models.DateField()
     end_date = models.DateField()
-    name = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=50)
     label = models.CharField(max_length=255, blank=True)
     members = models.ManyToManyField('course.Student', blank=True,
             related_name='statistic_groups')
@@ -50,9 +50,6 @@ class CourseGroup(models.Model):
         datetime_value = datetime_value or timezone.now()
         return datetime_value - timezone.make_aware(datetime.combine(
             self.start_date, datetime.min.time()))
-
-    def natural_key(self):
-        return (self.name,)
 
     def __unicode__(self):
         return unicode(self.label or self.name)
