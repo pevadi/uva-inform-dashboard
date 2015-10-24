@@ -22,6 +22,8 @@ urlpatterns = [
         app_name="embed")),
     url(r'^stats/', include('stats.urls', namespace="stats",
         app_name="stats")),
+    url(r'^storage/store/compile/?$', "zips.views.log_compile", name="log_compile"),
     url(r'^storage/store/?$', "storage.views.store_event", name="store_event"),
+    url(r'zips/', "zips.views.get_zip", name="get_zip"),
     url(r'^$', "viewer.views.render_dashboard", name="render"),
 ]
