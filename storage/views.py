@@ -22,6 +22,7 @@ def store_event(request):
     return HttpResponse(json.dumps(stored_event))
 
 
+@csrf_exempt
 @identity_required
 def store_video_watch_event(request):
     video_id = request.POST.get("video", None)
