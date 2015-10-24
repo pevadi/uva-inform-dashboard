@@ -20,8 +20,6 @@ def get_variable_stats(request, variable_name):
     if not request.method == "GET":
         return HttpResponseNotAllowed(['GET'])
     variable = get_object_or_404(Variable, name=variable_name)
-    if variable.averagingvariable:
-        variable = variable.averagingvariable
 
     # Retrieve current group context
     try:
@@ -91,7 +89,8 @@ def get_variable_stats(request, variable_name):
             student_bin = index
 
         predictions = {}
-        for output_variable in AveragingVariable.objects.filter(type='OUT'):
+        for output_variable in Variable.objects.filter(type='OUT',
+                course=group.course):
             predictions[output_variable.name] = (
                 get_gauss_params(output_variable,
                     student__in=get_students_by_variable_values(variable,

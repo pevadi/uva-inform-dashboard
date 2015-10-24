@@ -22,8 +22,11 @@ def get_gauss_params(variable, **filter_kwargs):
     statistics = variable.calculate_statistics_from_values(
             ValueHistory.objects.filter(variable=variable, **filter_kwargs))
 
-    values = map(lambda x: x['value'], statistics)
-    len_values = float(len(values))
-    mean = sum(values)/len_values
-    variance = sum([(value - mean)**2 for value in values])/len_values
-    return {'mean': mean, 'variance': variance}
+    if len(statistics):
+        values = map(lambda x: x['value'], statistics)
+        len_values = float(len(values))
+        mean = sum(values)/len_values
+        variance = sum([(value - mean)**2 for value in values])/len_values
+        return {'mean': mean, 'variance': variance}
+    else:
+        return None

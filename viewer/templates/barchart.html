@@ -324,16 +324,20 @@ function {{ load_fn }}_prediction(container){
 
 	return function(params){
         for(var variable in params) break;
-        var mean = params[variable]['mean']
-        var variance = params[variable]['variance']
-		variance += 0.2;
-		var distribution = gaussian(mean, variance);
-		data = [];
-		for(var i = 0; i < 10; i += 0.05){
-			data.push({'x': i, 'y': distribution.pdf(i)});
-		}
+		if(params[variable]){
+			var mean = params[variable]['mean']
+			var variance = params[variable]['variance']
+			variance += 0.2;
+			var distribution = gaussian(mean, variance);
+			data = [];
+			for(var i = 0; i < 10; i += 0.05){
+				data.push({'x': i, 'y': distribution.pdf(i)});
+			}
 
-		curve.transition().attr("d", line(data));
+			curve.transition().attr("d", line(data));
+		}else{
+			curve.transition().attr("d", line([]));
+		}
 	}
 }
 </script>
