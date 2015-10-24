@@ -37,13 +37,13 @@ def identity_required(func):
                 request.session['authenticated_course'] = course
                 request.session['authenticated_user'] = user
             else:
-                return HttpResponseBadRequest()
+                return HttpResponseBadRequest('Provided hash is incorrect.')
 
         if ('authenticated_course' in request.session and
                 'authenticated_user' in request.session):
             return func(request, *args, **kwargs)
         else:
-            return HttpResponseBadRequest()
+            return HttpResponseBadRequest('No authentication.')
 
     return inner
 

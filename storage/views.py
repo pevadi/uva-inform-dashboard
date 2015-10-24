@@ -28,12 +28,12 @@ def store_video_watch_event(request):
     duration = request.POST.get("duration", None)
 
     if video_id is None or duration is None:
-        return HttpResponseBadRequest()
+        return HttpResponseBadRequest('`video` and `duration` must be provided')
 
     try:
         duration = float(duration)
     except ValueError:
-        return HttpResponseBadRequest()
+        return HttpResponseBadRequest('duration must an integer or float')
 
     event = VideoWatchEvent(request.session.get("authenticated_user"),
         course=request.session.get("authenticated_course"))
