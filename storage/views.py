@@ -53,6 +53,11 @@ def store_webpage_ping_event(request):
         return HttpResponseBadRequest(
                 "`duration` and `location` must be provided")
 
+    try:
+        duration = float(duration)
+    except ValueError:
+        return HttpResponseBadRequest('duration must an integer or float')
+
     event = WebsitePingEvent(request.session.get("authenticated_user"),
         course=request.session.get("authenticated_course"))
 
