@@ -11,6 +11,14 @@ import math
 class Variable(PolymorphicModel):
     """Model containing information on variables used in predictions."""
     VARIABLE_TYPES = (('IN', "Input variable"), ('OUT', "Output variable"))
+    AGGREGATION_TYPES = (
+        ("NONE", "No aggregation"),
+        ("AVG", "Use the average value"),
+        ("SUM", "Use the cumulative value"),
+        ("LAST", "Use the latest value"),
+        ("MAX", "Use the highest value")
+        ("FIRST", "Use the first value"),
+        ("MIN", "Use the lowest value"))
 
     name = models.CharField(max_length=100, unique=True, blank=True)
     label = models.CharField(max_length=255, blank=True)
