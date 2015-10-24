@@ -4,14 +4,15 @@ from django.utils import timezone
 from course.models import Student, CourseGroup
 
 from datetime import datetime
+from polymorphic import PolymorphicModel
 
 import math
 
-class Variable(models.Model):
+class Variable(PolymorphicModel):
     """Model containing information on variables used in predictions."""
     VARIABLE_TYPES = (('IN', "Input variable"), ('OUT', "Output variable"))
 
-    name = models.CharField(max_length=100, primary_key=True, blank=True)
+    name = models.CharField(max_length=100, unique=True, blank=True)
     label = models.CharField(max_length=255, blank=True)
     course = models.ForeignKey('course.Course')
     num_bins = models.PositiveSmallIntegerField(default=10, blank=True)
