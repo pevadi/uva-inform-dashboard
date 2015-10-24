@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils import timezone
 
-from .models import Activity
+from .models import Activity, ActivityType, ActivityVerb
 from .models import IgnoredUser
 from storage import XAPIConnector
 
@@ -51,3 +52,198 @@ def import_bb_gradecenter_export(export_file, fields=None, verb=None,
                 time=timestamp))
     Activity.objects.bulk_create(activities)
     return activities
+
+class XAPIEvent(object):
+    _stmnt = None
+    user = None
+
+    def __init__(self, user, course=None, *args, **kwargs):
+        self.user = user
+        self._stmnt = {}
+        # Set the actor
+        self.set_actor(user)
+        # Set the course if provided.
+        if course is not None:
+            self.add_context_activity(course)
+        # Ensure a default timestamp is already set
+        self.set_timestamp()
+
+    def set_actor(self, actor, homepage=None):
+        """Set the actor dictionary.
+
+        Parameters:
+            user        -   String identifying the actor.
+            homepage    -   String identifying the actor's domain.
+                            (defaults to settings.XAPI_ACTOR_HOMEPAGE)
+        """
+        homepage = homepage or settings.XAPI_ACTOR_HOMEPAGE
+
+        self._stmnt["actor"] = {
+            "objectType": "Agent",
+            "account": {
+                "homePage": homepage,
+                "name": actor
+            }
+        }
+
+    def add_context_activity(self, activity_id, ctype=None):
+        """Add a context activity to the context dictionary.
+
+        Parameters:
+            activity_id -   URI string identifying the activity.
+            ctype       -   One of "parent","grouping", "category", "other".
+                            (default grouping)
+        """
+        ctype = ctype or "grouping"
+        context = self._stmnt.get("context", {})
+        context_activities = context.get("contextActivities", {})
+        context_activities_type = context_activities.get(ctype, [])
+        context_activities_type.append({"objectType": "Activity",
+            "id": activity_id })
+        context_activities[ctype] = context_activities_type
+        context["contextActivities"] = context_activities
+        self._stmnt["context"] = context
+
+    def set_timestamp(self, dtime=None):
+        """Set the ISO 8601 timestamp.
+
+        Parameters:
+            dtime   -   datetime (default: timezone.now())
+        """
+        if dtime is None:
+            dtime = timezone.now()
+        elif not timezone.is_aware(dtime):
+            dtime = timezone.make_aware(dtime)
+
+        self._stmnt['timestamp'] = (settings.LRS_TIME_OFFSET(
+            dtime.replace(microsecond=0)).isoformat())
+
+    def set_object(self, object_id, def_type, def_name=None,
+            def_desc=None, object_type="Activity"):
+        """Set the object dictionary.
+
+        Parameters:
+            object_id   -   URI string identifying the activity.
+            def_type    -   Activity type instance or URI.
+            def_name    -   Name of the activity. (optional)
+            def_desc    -   Description of the activity. (optional)
+            object_type -   Object type. (Default: "Activity")
+        """
+        definition = {}
+        if isinstance(def_type, ActivityType):
+            definition['type'] = def_type.uri
+        else:
+            definition['type'] = def_type
+
+        if def_name is not None:
+            if isinstance(def_name, dict):
+                definition['name'] = def_name
+            else:
+                definition['name'] = {"en-US": def_name}
+
+        if def_desc is not None:
+            if isinstance(def_desc, dict):
+                definition['description'] = def_desc
+            else:
+                definition['description'] = {"en-US": def_desc}
+
+        self._stmnt['object'] = {
+            "definition": definition,
+            "id": object_id,
+            "objectType": object_type
+        }
+
+    def set_verb(self, verb_id, verb_name=None):
+        """Set the verb dictionary.
+
+        Parameters:
+            verb_id     -   URI string identifying the verb.
+            verb_name   -   Displayable name of the verb.
+                            (defaults to last part of the URI)
+        """
+        if verb_name is None:
+            verb_name = verb_id.split("/")[-1]
+
+        if not isinstance(verb_name, dict):
+            verb_name = {"en-US": verb_name}
+
+        self._stmnt['verb'] = {"id": verb_id, "display": verb_name}
+
+    def statement(self):
+        return self._stmnt
+
+    def json(self):
+        from json import dumps
+        return dumps(self._stmnt)
+
+    def store(self):
+        if not settings.STORE_IN_LRS:
+            print "Fake storing: ", self.statement()
+            return None
+        elif IgnoredUser.objects.filter(user=self.user).exists():
+            return HttpResponse(status=204)
+
+        xapi = XAPIConnector()
+        resp = xapi.submitStatement(self.statement())
+        return resp
+
+
+class DashboardEvent(XAPIEvent):
+
+    def __init__(self, *args, **kwargs):
+        super(DashboardEvent, self).__init__(*args, **kwargs)
+        self.set_object(
+            "https://coach2.innovatievooronderwijs.nl",
+            "http://activitystrea.ms/schema/1.0/application",
+            def_name= {"en-US": "UvAInform COACH2 Dashboard"},
+            def_desc= {"en-US": "UvAInform COACH2 Dashboard"})
+
+
+class DashboardAccessEvent(DashboardEvent):
+
+    def __init__(self, *args, **kwargs):
+        super(DashboardAccessEvent, self).__init__(*args, **kwargs)
+        self.set_verb(
+            "http://activitystrea.ms/schema/1.0/access",
+            verb_name={"en-US": "accessed"})
+
+
+class DashboardInteractedEvent(DashboardEvent):
+
+    def __init__(self, *args, **kwargs):
+        super(DashboardInteractedEvent, self).__init__(*args, **kwargs)
+        self.set_verb(
+            "http://activitystrea.ms/schema/1.0/interact",
+            verb_name={"en-US": "interacted"})
+
+
+class VideoWatchEvent(XAPIEvent):
+
+    def __init__(self, *args, **kwargs):
+        super(VideoWatchEvent, self).__init__(*args, **kwargs)
+        self.set_verb(
+            "http://activitystrea.ms/schema/1.0/watch",
+            verb_name={"en-US": "watched"})
+
+    def set_object(self, object_id, *args, **kwargs):
+        super(VideoWatchEvent, self).set_object(object_id,
+            "http://adlnet.gov/expapi/activities/media", *args, **kwargs)
+
+    def set_duration(self, duration=None, **kwargs):
+        from datetime import timedelta
+        from isodate import duration_isoformat
+        duration = duration or timedelta(**kwargs)
+        self._stmnt['result'] = {"duration": duration_isoformat(duration)}
+
+
+class WebsitePingEvent(XAPIEvent):
+
+    def __init__(self, *args, **kwargs):
+        super(WebsitePingEvent, self).__init__(*args, **kwargs)
+        self.set_verb(
+            "http://adlnet.gov/expapi/verbs/experienced",
+            verb_name={"en-US": "experiences"})
+
+    def set_object(self, object_id, *args, **kwargs):
+        super(WebsitePingEvent, self).set_object(object_id,
+            "http://activitystrea.ms/schema/1.0/page", *args, **kwargs)

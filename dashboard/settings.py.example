@@ -121,3 +121,5 @@ LRS = {
     'password': 'lrs password',
     'endpoint': 'lrs endpoint (i.e. .../xAPI/statements)',
 }
+
+XAPI_ACTOR_HOMEPAGE = "https://secure.uva.nl"

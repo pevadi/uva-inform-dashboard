@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 class ActivityType(models.Model):
     uri = models.URLField(max_length=255)

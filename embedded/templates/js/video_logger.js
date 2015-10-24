@@ -52,23 +52,9 @@ YTVideo = function(videoId, height, width, containerId){
 			_this.debug("Counting seconds: "+ secondsWatched);
 			_this.last_time_tic = current_time;
 			_this.timer = setTimeout(_this.onTimeWatched, timeoutInterval);
-	        $.ajax("//{{ request.get_host }}{% url 'store_event' %}?{{ request.signed_url_params|safe }}",{
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({
-                    "verb":"http://adlnet.gov/expapi/verbs/experienced",
-                    "object": {
-                        "id": _this.player.getVideoUrl(),
-                        "objectType": "Activity",
-                        "definition": {
-                            "type": "http://adlnet.gov/expapi/activities/media"
-                        }
-                    },
-                    "result": {
-                        "duration": "PT"+Math.round(secondsWatched*100)/100+"S"
-                    },
-                    "timestamp": new Date().toISOString()
-                })
+	        $.post("//{{ request.get_host }}{% url 'store_video_watch_event' %}?{{ request.signed_url_params|safe }}",{
+                "video": _this.player.getVideoUrl(),
+                "duration": Math.round(secondsWatched*100)/100
             });
 		}
 	}

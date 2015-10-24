@@ -1,6 +1,5 @@
 from django.utils import timezone
 from datetime import timedelta
-from django.conf import settings
 
 def generate_viewer_access_event():
     timestamp = settings.LRS_TIME_OFFSET(timezone.now().replace(microsecond=0))
