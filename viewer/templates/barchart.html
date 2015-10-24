@@ -100,7 +100,7 @@ function {{ load_fn }}_stats(container, update_fn){
 	var sliderHeight = 20, sliderMargin = 5, sliderPadding = 3;
 	var plotHeight = height - sliderHeight - sliderMargin;
 
-	d3.json("/stats/avg_grade/", function(error, data) {
+	d3.json("/stats/{{ input_variables.first.name }}/", function(error, data) {
 		if (error) throw error;
 
         var student_bin = data['student_bin'];
@@ -323,7 +323,7 @@ function {{ load_fn }}_prediction(container){
 		.attr("d", line);
 
 	return function(params){
-        var variable = "final_grade";
+        for(var variable in params) break;
         var mean = params[variable]['mean']
         var variance = params[variable]['variance']
 		variance += 0.2;
@@ -331,7 +331,6 @@ function {{ load_fn }}_prediction(container){
 		data = [];
 		for(var i = 0; i < 10; i += 0.05){
 			data.push({'x': i, 'y': distribution.pdf(i)});
-			if(i == mean) console.log(data[i]);
 		}
 
 		curve.transition().attr("d", line(data));
