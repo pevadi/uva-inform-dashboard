@@ -169,6 +169,12 @@ class XAPIEvent(object):
 
         self._stmnt['verb'] = {"id": verb_id, "display": verb_name}
 
+    def set_duration(self, duration=None, **kwargs):
+        from datetime import timedelta
+        from isodate import duration_isoformat
+        duration = duration or timedelta(**kwargs)
+        self._stmnt['result'] = {"duration": duration_isoformat(duration)}
+
     def statement(self):
         return self._stmnt
 
@@ -227,12 +233,6 @@ class VideoWatchEvent(XAPIEvent):
     def set_object(self, object_id, *args, **kwargs):
         super(VideoWatchEvent, self).set_object(object_id,
             "http://adlnet.gov/expapi/activities/media", *args, **kwargs)
-
-    def set_duration(self, duration=None, **kwargs):
-        from datetime import timedelta
-        from isodate import duration_isoformat
-        duration = duration or timedelta(**kwargs)
-        self._stmnt['result'] = {"duration": duration_isoformat(duration)}
 
 
 class WebsitePingEvent(XAPIEvent):

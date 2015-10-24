@@ -61,8 +61,8 @@ YTVideo = function(videoId, height, width, containerId){
 	}
 }
 
+$.getScript("https://www.youtube.com/iframe_api");
 $(function(){
-	$.getScript("https://www.youtube.com/iframe_api");
 	$("iframe").each(function(){
 		var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#\&\?]*).*/;
 		var match = $(this).attr("src").match(regExp);

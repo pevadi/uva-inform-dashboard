@@ -21,7 +21,6 @@ def store_event(request):
 
     return HttpResponse(json.dumps(stored_event))
 
-
 @csrf_exempt
 @identity_required
 def store_video_watch_event(request):
@@ -41,16 +40,34 @@ def store_video_watch_event(request):
     event.set_object(video_id)
     event.set_duration(seconds=duration)
     resp = event.store()
-    if resp is None:
+    if resp is None or resp.status_code == 200:
         return HttpResponse(status=204)
-    else:
-        return HttpResponse(resp.text)
 
+@csrf_exempt
+@identity_required
 def store_webpage_ping_event(request):
-    pass
+    location = request.POST.get("location", None)
+    duration = request.POST.get("duration", None)
 
+    if duration is None or location is None:
+        return HttpResponseBadRequest(
+                "`duration` and `location` must be provided")
+
+    event = WebsitePingEvent(request.session.get("authenticated_user"),
+        course=request.session.get("authenticated_course"))
+
+    event.set_object(location)
+    event.set_duration(seconds=duration)
+    resp = event.store()
+    if resp is None or resp.status_code == 200:
+        return HttpResponse(status=204)
+
+@csrf_exempt
+@identity_required
 def store_interacted_event(request):
     pass
 
+@csrf_exempt
+@identity_required
 def store_compile_event(request):
     pass
