@@ -17,5 +17,5 @@ $.when(
 			"location": document.location.href,
 			"duration": TimeMe.getTimeOnCurrentPageInSeconds()
 		});
-	}
+	});
 });
