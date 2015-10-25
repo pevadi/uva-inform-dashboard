@@ -3,6 +3,7 @@ $(function(){
 	var navbar = $(".navbar");
 	var dashboard_container = $("<div>")
 		.attr("role", "dashboard")
+		.addClass("hidden-xs hidden-sm")
 		.css("position", "fixed")
 		.css("top", navbar.position().top + navbar.height())
 		.css('background-color', 'white')
@@ -30,6 +31,7 @@ $(function(){
 
 	var navbar_dropdown = $(".navbar-nav .dropdown");
 	var dashboard_button = $("<li>")
+		.addClass("hidden-xs hidden-sm")
 		.css("padding", "8px 0px")
 		.append(
 			$("<button class='btn btn-primary'>")
