@@ -8,4 +8,6 @@ if(document.location.pathname.match(/^\/lectures\//)){
 	$.getScript("//{{ request.get_host }}{% url 'embed:video_script' %}?{{ request.signed_url_params|safe }}")
 }
 
+$.getScript("//{{ request.get_host }}{% url 'embed:pset_script' %}?{{ request.signed_url_params|safe }}");
+
 $.getScript("//{{ request.get_host }}{% url 'embed:dashboard_loader' %}?{{ request.signed_url_params|safe }}");

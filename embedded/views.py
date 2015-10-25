@@ -19,6 +19,11 @@ def get_ping_script(request):
         content_type="application/javascript")
 
 @identity_required
+def get_pset_script(request):
+    return render(request, "js/pset_annotator.js",
+        content_type="application/javascript")
+
+@identity_required
 def get_video_script(request):
     return render(request, "js/video_logger.js",
         content_type="application/javascript")
