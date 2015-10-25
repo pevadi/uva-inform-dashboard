@@ -24,7 +24,7 @@ $(function(){
 			.css("top", navbar.position().top + navbar.height()+10)
 			.css("right", 10)
 			.html("<span>&times;</span>")
-			.on("click", function(){ dashboard_container.hide(); });
+			.on("click", function(){ dashboard_container.hide(); }));
 
 	navbar.after(dashboard_container);
 
