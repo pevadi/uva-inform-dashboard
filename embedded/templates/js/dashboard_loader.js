@@ -20,7 +20,11 @@ $(function(){
 	var navbar_dropdown = $(".navbar-nav .dropdown");
 	var dashboard_button = $("<li>")
 		.css("padding", "8px 0px")
-		.append($("<button class='btn btn-primary>").text("Dashboard"))
-		.on("click", function(){ navbar.after(dashboard_container); })
+		.append(
+			$("<button class='btn btn-primary'>")
+				.on("click", function(){
+					navbar.after(dashboard_container);
+				})
+				.text("Dashboard"));
 	navbar_dropdown.before(dashboard_button);
 });
