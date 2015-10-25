@@ -30,10 +30,6 @@ def identity_required(func):
                         hexdigest().upper())
 
             if hash_string == param_hash.upper():
-                request.signed_url_params = generate_signed_params(
-                    user, course)
-                request.signed_url_params_unquoted = generate_signed_params(
-                    user, course, quote=False)
                 request.authenticated_course = course
                 request.authenticated_user = user
                 request.session['authenticated_course'] = course
@@ -46,20 +42,26 @@ def identity_required(func):
 
         if ('authenticated_course' in request.session and
                 'authenticated_user' in request.session):
+            request.signed_url_params = generate_signed_params(
+               request.session.get("authenticated_user"),
+               request.session.get("authenticated_course"))
+            request.signed_url_params_unquoted = generate_signed_params(
+               request.session.get("authenticated_user"),
+               request.session.get("authenticated_course"), quoted=False)
             return func(request, *args, **kwargs)
         else:
             return HttpResponseBadRequest('No authentication.')
 
     return inner
 
-def generate_signed_params(user, course, timestamp=None, quote=True):
+def generate_signed_params(user, course, timestamp=None, quoted=True):
     from time import time
     from urllib import quote
     timestamp = timestamp or str(int(time()))
     secret = settings.AUTHENTICATION_SECRET
     hash_string = (sha256(",".join([user, str(timestamp), course, secret])).
             hexdigest().upper())
-    if quote:
+    if quoted:
         course = quote(course, '')
     return "user=%s&timestamp=%s&course=%s&hash=%s" % (
             user, timestamp, course, hash_string)
