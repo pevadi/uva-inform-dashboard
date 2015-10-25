@@ -3,7 +3,6 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 
 from identity import identity_required
 from storage.helpers import *
-from .helpers import generate_viewer_access_event
 from course.models import Course
 
 @identity_required
