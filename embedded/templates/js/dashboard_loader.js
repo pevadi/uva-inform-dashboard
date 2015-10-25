@@ -9,6 +9,7 @@ $(function(){
 		.css('background-color', 'white')
 		.css('border', 'thin solid black')
 		.css("width", "100%")
+		.css("z-index", "99")
 		.css("display", "none");
 
 	var dashboard_iframe = $("<iframe>")
