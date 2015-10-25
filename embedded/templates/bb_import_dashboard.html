@@ -4,7 +4,13 @@
 $.noConflict(); jQuery(function(){
 var dashboard_link = jQuery("a").filter(function(){ return jQuery(this).children().first().text() == "__dashboard_link__" });
 if(dashboard_link.length){
-  jQuery("#dashboardUvaInform").attr("src", dashboard_link.attr("href"));
+  jQuery.ajax({method: "HEAD", url:dashboard_link.attr("href")}).done(
+    function(_1,_2,xhr){
+	  if( xhr.stats == 200 ){
+        jQuery("#dashboardUvaInform").attr("src", dashboard_link.attr("href"));
+	  }
+	}
+  )
   if(dashboard_link.parent().find('.editmode.hideme').length){
     dashboard_link.parent().parent().parent().hide();
   }

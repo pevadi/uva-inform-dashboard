@@ -26,4 +26,5 @@ urlpatterns = [
         app_name="stats")),
     url(r'zips/', "zips.views.get_zip", name="get_zip"),
     url(r'^$', "viewer.views.render_dashboard", name="render"),
+    url(r'^treatment/?$', "viewer.views.has_treatment", name="has_treatment"),
 ]

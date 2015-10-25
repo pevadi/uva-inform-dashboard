@@ -30,8 +30,6 @@ def identity_required(func):
                         hexdigest().upper())
 
             if hash_string == param_hash.upper():
-                request.authenticated_course = course
-                request.authenticated_user = user
                 request.session['authenticated_course'] = course
                 request.session['authenticated_user'] = user
             else:
@@ -42,12 +40,13 @@ def identity_required(func):
 
         if ('authenticated_course' in request.session and
                 'authenticated_user' in request.session):
-            request.signed_url_params = generate_signed_params(
-               request.session.get("authenticated_user"),
-               request.session.get("authenticated_course"))
+            user = request.session.get('authenticated_user')
+            course = request.session.get('authenticated_course')
+            request.authenticated_course = course
+            request.authenticated_user = user
+            request.signed_url_params = generate_signed_params(user, course)
             request.signed_url_params_unquoted = generate_signed_params(
-               request.session.get("authenticated_user"),
-               request.session.get("authenticated_course"), quoted=False)
+                    user, course, quoted=False)
             return func(request, *args, **kwargs)
         else:
             return HttpResponseBadRequest('No authentication.')
