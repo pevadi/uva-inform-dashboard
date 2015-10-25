@@ -7,7 +7,8 @@ $(function(){
 		.css("top", navbar.position().top + navbar.height())
 		.css('background-color', 'white')
 		.css('border', 'thin solid black')
-		.css("width", "100%");
+		.css("width", "100%")
+		.css("display", "none");
 
 	var dashboard_iframe = $("<iframe>")
 		//.attr("src", "//{{ request.get_host }}?"+signed_params)
@@ -22,8 +23,10 @@ $(function(){
 			.css("position", "fixed")
 			.css("top", navbar.position().top + navbar.height()+10)
 			.css("right", 10)
-			.attr("data-dismiss", "dashboard")
-			.html("<span>&times;</span>"));
+			.html("<span>&times;</span>")
+			.on("click", function(){ dashboard_container.hide(); });
+
+	navbar.after(dashboard_container);
 
 	var navbar_dropdown = $(".navbar-nav .dropdown");
 	var dashboard_button = $("<li>")
@@ -31,7 +34,7 @@ $(function(){
 		.append(
 			$("<button class='btn btn-primary'>")
 				.on("click", function(){
-					navbar.after(dashboard_container);
+					dashboard_container.show()
 				})
 				.text("Dashboard"));
 	navbar_dropdown.before(dashboard_button);
