@@ -28,7 +28,7 @@ $(function(){
 
 	navbar.after(dashboard_container);
 
-	var navbar_dropdown = $(".navbar-nav .dropdown");
+	var navbar_dropdown = $(".navbar-nav.navbar-right .dropdown");
 	var dashboard_button = $("<li>")
 		.addClass("hidden-xs hidden-sm")
 		.css("padding", "8px 0px")
