@@ -40,7 +40,7 @@ def identity_required(func):
                 return HttpResponseBadRequest((
                     'Provided hash is incorrect.\n'
                     "%s !== %s %s" % (hash_string, param_hash.upper(),
-                        hash_contents))
+                        hash_contents)))
 
         if ('authenticated_course' in request.session and
                 'authenticated_user' in request.session):
