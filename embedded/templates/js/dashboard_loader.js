@@ -36,7 +36,7 @@ $(function(){
 		.append(
 			$("<button class='btn btn-primary'>")
 				.on("click", function(){
-					dashboard_container.show()
+					dashboard_container.toggle()
 				})
 				.text("Dashboard"));
 	navbar_dropdown.before(dashboard_button);
