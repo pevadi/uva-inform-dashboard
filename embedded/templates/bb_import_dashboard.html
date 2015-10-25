@@ -6,11 +6,11 @@ var dashboard_link = jQuery("a").filter(function(){ return jQuery(this).children
 if(dashboard_link.length){
   jQuery.ajax({method: "HEAD", url:dashboard_link.attr("href")}).done(
     function(_1,_2,xhr){
-	  if( xhr.stats == 200 ){
-        jQuery("#dashboardUvaInform").attr("src", dashboard_link.attr("href"));
-	  }
-	}
-  )
+      if( xhr.status == 200 ){
+        jQuery("#dashboardUvaInform").append(jQuery("<iframe width='850' height='300'>").attr("src", dashboard_link.attr("href")));
+      }
+    }
+  );
   if(dashboard_link.parent().find('.editmode.hideme').length){
     dashboard_link.parent().parent().parent().hide();
   }
@@ -28,4 +28,4 @@ if(dashboard_label.length){
 });
 /*]]>*/</script>
 </p>
-<p><iframe id="dashboardUvaInform" width="850" height="300"></iframe></p>
+<div id="dashboardUvaInform"></div>

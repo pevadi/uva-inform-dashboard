@@ -14,4 +14,4 @@ if(document.location.pathname.match(/^\/psets\//)){
 
 $.get("//{{ request.get_host }}{% url 'has_treatment' %}?{{ request.signed_url_params_unquoted|safe }}", function(has_treatment){
 	if(has_treatment) $.getScript("//{{ request.get_host }}{% url 'embed:dashboard_loader' %}?{{ request.signed_url_params_unquoted|safe }}");
-}
+});
