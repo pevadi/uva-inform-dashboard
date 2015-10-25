@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 
+from dateutil import parser as dateparser
+
 class ActivityType(models.Model):
     uri = models.URLField(max_length=255)
 
@@ -49,7 +51,7 @@ class Activity(models.Model):
             user = statement['actor']['mbox']
         elif 'account' in statement['actor']:
             account = statement['actor']['account']
-            if account['homePage'] == settings.USER_AUTH_DOMAIN:
+            if account['homePage'] == settings.XAPI_ACTOR_HOMEPAGE:
                 user = account['name']
             else:
                 return None
@@ -61,25 +63,39 @@ class Activity(models.Model):
 
         activity = statement['object']['id']
         verb = statement['verb']['id']
-        name = statement['object']['definition']['name']['en-US']
-        description = statement['object']['definition']['description']['en-US']
-        time = dateutil.parser.parse(statement['timestamp'])
         try:
-            raw_score = statement['result']['score']['raw']
-            min_score = statement['result']['score']['min']
-            max_score = statement['result']['score']['max']
-            value = 100 * (raw_score - min_score) / max_score
+            name = statement['object']['definition']['name']['en-US']
         except KeyError:
-            try:
-                value = 100 * float(statement['result']['extensions'][PROGRESS_T])
-            except KeyError:
-                # If no information is given about the end result then assume a
-                # perfect score was acquired when the activity was completed,
-                # and no score otherwise.
-                if verb == COMPLETED:
-                    value = 100
+            name = ""
+
+        try:
+            description = statement['object']['definition']['description']['en-US']
+        except KeyError:
+            description = ""
+
+        time = dateparser.parse(statement['timestamp'])
+
+        value = None
+        if 'result' in statement:
+            result = statement['result']
+            if 'score' in result and 'raw' in result['score']:
+                raw_score = result['score']['raw']
+                min_score = result['score'].get("min", None)
+                max_score = result['score'].get("max", None)
+                if min_score is None or max_score is None:
+                    value = raw_score
                 else:
-                    value = 0
+                    value = 100 * (raw_score - min_score) / max_score
+            elif 'extensions' in result and PROGRESS_T in result:
+                value = 100 * float(result['extensions'][PROGRESS_T])
+            elif 'duration' in result:
+                from isodate import ISO8601Error, parse_duration
+                try:
+                    duration = parse_duration(statement['result']['duration'])
+                except ISO8601Error, TypeError:
+                    value = None
+                else:
+                    value = duration.total_seconds()
 
         if 'context' in statement and 'contextActivities' in statement['context']:
             course = statement['context']['contextActivities']['grouping'][0]['id']

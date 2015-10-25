@@ -39,9 +39,10 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='AveragingVariable',
+            name='SingleEventVariable',
             fields=[
                 ('variable_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='stats.Variable')),
+                ('aggregation', models.CharField(default=b'AVG', max_length=5, choices=[(b'AVG', b'Use the average value'), (b'SUM', b'Use the cumulative value'), (b'MAX', b'Use the highest value'), (b'MIN', b'Use the lowest value')])),
                 ('types', models.ManyToManyField(to='storage.ActivityType')),
                 ('verbs', models.ManyToManyField(to='storage.ActivityVerb')),
             ],

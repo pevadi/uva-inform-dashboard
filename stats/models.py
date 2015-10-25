@@ -11,14 +11,6 @@ import math
 class Variable(PolymorphicModel):
     """Model containing information on variables used in predictions."""
     VARIABLE_TYPES = (('IN', "Input variable"), ('OUT', "Output variable"))
-    AGGREGATION_TYPES = (
-        ("NONE", "No aggregation"),
-        ("AVG", "Use the average value"),
-        ("SUM", "Use the cumulative value"),
-        ("LAST", "Use the latest value"),
-        ("MAX", "Use the highest value"),
-        ("FIRST", "Use the first value"),
-        ("MIN", "Use the lowest value"))
 
     name = models.CharField(max_length=100, unique=True, blank=True)
     label = models.CharField(max_length=255, blank=True)
@@ -134,9 +126,23 @@ class Variable(PolymorphicModel):
         return "Variable(%s)" % (self,)
 
 
-class AveragingVariable(Variable):
+class SingleEventVariable(Variable):
+    AGGREGATION_TYPES = (
+        ("AVG", "Use the average value"),
+        ("SUM", "Use the cumulative value"),
+        ("MAX", "Use the highest value"),
+        ("MIN", "Use the lowest value"))
+    aggregation = models.CharField(max_length=5,
+            choices=AGGREGATION_TYPES, default="AVG")
     types = models.ManyToManyField('storage.ActivityType')
     verbs = models.ManyToManyField('storage.ActivityVerb')
+
+    def _get_aggregator(self):
+        return ({
+            "AVG": models.Avg,
+            "SUM": models.Sum,
+            "MAX": models.Max,
+            "MIN": models.Min})[self.aggregation]
 
     def calculate_values_from_activities(self, activities):
         last_consumed_activity = None
@@ -154,6 +160,7 @@ class AveragingVariable(Variable):
 
     def calculate_statistics_from_values(self, value_history):
         from course.models import CourseGroup
+        aggregator = self._get_aggregator()
         return (value_history.values('student','group').
             annotate(value=models.Avg('value')))
 

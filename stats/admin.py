@@ -8,13 +8,14 @@ class ValueHistoryAdmin(admin.ModelAdmin):
             'datetime')
     list_filter = ('group__course',)
 
-class AveragingVariableAdmin(PolymorphicChildModelAdmin):
-    base_model = AveragingVariable
+class SingleEventVariableAdmin(PolymorphicChildModelAdmin):
+    base_model = SingleEventVariable
 
 class VariableAdmin(PolymorphicParentModelAdmin):
+    list_display = ('name', 'label', 'course')
     base_model = Variable
     child_models = (
-        (AveragingVariable, AveragingVariableAdmin),
+        (SingleEventVariable, SingleEventVariableAdmin),
     )
 
 admin.site.register(Variable, VariableAdmin)
