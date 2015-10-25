@@ -8,7 +8,7 @@ $(function(){
 		.css('border', 'thin solid black')
 		.css("width", "100%");
 
-	var dashboard_iframe = $("iframe")
+	var dashboard_iframe = $("<iframe>")
 		//.attr("src", "//{{ request.get_host }}?"+signed_params)
 		.attr("src", "//{{ request.get_host }}")
 		.css("border", "0")
