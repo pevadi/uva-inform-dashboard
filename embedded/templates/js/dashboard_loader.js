@@ -12,8 +12,7 @@ $(function(){
 		.css("display", "none");
 
 	var dashboard_iframe = $("<iframe>")
-		//.attr("src", "//{{ request.get_host }}?"+signed_params)
-		.attr("src", "//{{ request.get_host }}")
+		.attr("src", "//{{ request.get_host }}?"+signed_params)
 		.css("border", "0")
 		.css('width', "100%")
 		.css("height", "270px");
