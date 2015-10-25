@@ -73,8 +73,27 @@ def store_webpage_ping_event(request):
 
 @csrf_exempt
 @identity_required
+def store_accessed_event(request):
+    resp = DashboardAccessEvent(
+        request.authenticated_user,
+        request.authenticated_course
+    ).store()
+    if resp is None or resp.status_code == 200:
+        return HttpResponse(status=204)
+    else:
+        return HttpResponse(status=resp.status_code)
+
+@csrf_exempt
+@identity_required
 def store_interacted_event(request):
-    pass
+    resp = DashboardInteractedEvent(
+        request.authenticated_user,
+        request.authenticated_course
+    ).store()
+    if resp is None or resp.status_code == 200:
+        return HttpResponse(status=204)
+    else:
+        return HttpResponse(status=resp.status_code)
 
 @csrf_exempt
 @identity_required

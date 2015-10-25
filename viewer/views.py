@@ -12,11 +12,14 @@ from course.models import Course
 @identity_required
 @treatment_required
 def render_dashboard(request):
-    user = request.authenticated_user
-
+    log_access_event = bool(int(request.GET.get("log_access", "0")))
     course = get_object_or_404(Course, url=request.authenticated_course)
 
-    DashboardAccessEvent(user, course.url).store()
+    if log_access_event:
+        DashboardAccessEvent(
+            request.authenticated_user,
+            request.authenticated_course
+        ).store()
 
     return render(request, "dashboard.html", {
         'input_variables': course.variable_set.filter(type='IN')

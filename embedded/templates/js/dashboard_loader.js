@@ -37,6 +37,9 @@ $(function(){
 			$("<button class='btn btn-primary'>")
 				.on("click", function(){
 					dashboard_container.toggle()
+					if(dashboard_container.css("display") == "block"){
+						$.post("//{{ request.get_host }}{% url 'storage:store_accessed_event' %}?{{ request.signed_url_params_unquoted|safe }}");
+					}
 				})
 				.text("Dashboard"));
 	navbar_section.prepend(dashboard_button);
