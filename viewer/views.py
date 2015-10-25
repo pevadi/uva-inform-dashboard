@@ -13,7 +13,7 @@ def render_dashboard(request):
     course = get_object_or_404(Course,
             url=request.session.get("authenticated_course"))
 
-    DashboardAccessEvent(user, course).store()
+    DashboardAccessEvent(user, course.url).store()
 
     return render(request, "dashboard.html", {
         'input_variables': course.variable_set.filter(type='IN')
