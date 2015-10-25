@@ -52,7 +52,7 @@ YTVideo = function(videoId, height, width, containerId){
 			_this.debug("Counting seconds: "+ secondsWatched);
 			_this.last_time_tic = current_time;
 			_this.timer = setTimeout(_this.onTimeWatched, timeoutInterval);
-			var signed_params = "{{ request.signed_url_params|safe }}";
+			var signed_params = "{{ request.signed_url_params_unquoted|safe }}";
 	        $.post("//{{ request.get_host }}{% url 'storage:store_video_watch_event' %}?"+signed_params,{
                 "video": _this.player.getVideoUrl(),
                 "duration": Math.round(secondsWatched*100)/100

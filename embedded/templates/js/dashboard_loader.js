@@ -1,5 +1,5 @@
 $(function(){
-	var signed_params = "{{ request.signed_url_params|safe }}";
+	var signed_params = "{{ request.signed_url_params_unquoted|safe }}";
 	var navbar = $(".navbar");
 	var dashboard_container = $("<div>")
 		.attr("role", "dashboard")
