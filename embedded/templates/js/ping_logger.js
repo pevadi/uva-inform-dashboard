@@ -13,9 +13,14 @@ $.when(
 
 	var signed_params = "{{ request.signed_url_params_unquoted|safe }}";
 	$(window).bind('beforeunload', function() {
-	    $.post("//{{ request.get_host }}{% url 'storage:store_webpage_ping_event' %}?"+signed_params,{
-			"location": document.location.href,
-			"duration": TimeMe.getTimeOnCurrentPageInSeconds()
+	    $.ajax({
+			method: "POST",
+			url: "//{{ request.get_host }}{% url 'storage:store_webpage_ping_event' %}?"+signed_params,
+			data: {
+				"location": document.location.href,
+				"duration": TimeMe.getTimeOnCurrentPageInSeconds()
+			},
+			async: false
 		});
 	});
 });
