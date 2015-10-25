@@ -2,6 +2,7 @@ $(function(){
 	var signed_params = "{{ request.signed_url_params|safe }}";
 	var navbar = $(".navbar");
 	var dashboard_container = $("<div>")
+		.attr("role", "dashboard")
 		.css("position", "fixed")
 		.css("top", navbar.position().top + navbar.height())
 		.css('background-color', 'white')
@@ -16,6 +17,13 @@ $(function(){
 		.css("height", "270px");
 
 	dashboard_container.append(dashboard_iframe);
+	dashboard_container.append(
+		$("<button type='button' class='close'>")
+			.css("position", "fixed")
+			.css("top", navbar.position().top + navbar.height()+10)
+			.css("right", 10)
+			.attr("data-dismiss", "dashboard")
+			.html("<span>&times;</span>"));
 
 	var navbar_dropdown = $(".navbar-nav .dropdown");
 	var dashboard_button = $("<li>")
