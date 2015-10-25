@@ -28,7 +28,7 @@ $(function(){
 
 	navbar.after(dashboard_container);
 
-	var navbar_dropdown = $(".navbar-nav.navbar-right .dropdown");
+	var navbar_section = $(".navbar-nav.navbar-right");
 	var dashboard_button = $("<li>")
 		.addClass("hidden-xs hidden-sm")
 		.css("padding", "8px 0px")
@@ -38,5 +38,5 @@ $(function(){
 					dashboard_container.toggle()
 				})
 				.text("Dashboard"));
-	navbar_dropdown.before(dashboard_button);
+	navbar_section.prepend(dashboard_button);
 });
