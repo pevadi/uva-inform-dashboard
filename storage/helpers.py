@@ -246,3 +246,16 @@ class WebsitePingEvent(XAPIEvent):
     def set_object(self, object_id, *args, **kwargs):
         super(WebsitePingEvent, self).set_object(object_id,
             "http://activitystrea.ms/schema/1.0/page", *args, **kwargs)
+
+
+class CompileEvent(XAPIEvent):
+
+    def __init__(self, *args, **kwargs):
+        super(CompileEvent, self).__init__(*args, **kwargs)
+        self.set_verb(
+            "http://activitystrea.ms/schema/1.0/build",
+            verb_name={"en-US": "built"})
+
+    def set_object(self, object_id, *args, **kwargs):
+        super(CompileEvent, self).set_object(object_id,
+            "http://activitystrea.ms/schema/1.0/application", *args, **kwargs)

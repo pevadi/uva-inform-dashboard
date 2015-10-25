@@ -45,6 +45,7 @@ INSTALLED_APPS = (
     'stats',
     'viewer',
     'embedded',
+	'zips',
 )
 
 MIDDLEWARE_CLASSES = (

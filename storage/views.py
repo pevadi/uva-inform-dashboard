@@ -42,6 +42,8 @@ def store_video_watch_event(request):
     resp = event.store()
     if resp is None or resp.status_code == 200:
         return HttpResponse(status=204)
+    else:
+        return HttpResponse(status=resp.status_code)
 
 @csrf_exempt
 @identity_required
@@ -66,6 +68,8 @@ def store_webpage_ping_event(request):
     resp = event.store()
     if resp is None or resp.status_code == 200:
         return HttpResponse(status=204)
+    else:
+        return HttpResponse(status=resp.status_code)
 
 @csrf_exempt
 @identity_required
@@ -75,4 +79,17 @@ def store_interacted_event(request):
 @csrf_exempt
 @identity_required
 def store_compile_event(request):
-    pass
+    pset = request.POST.get("pset", None)
+
+    if pset is None:
+        return HttpResponseBadRequest()
+
+    event = CompileEvent(request.session.get("authenticated_user"),
+        course=request.session.get("authenticated_course"))
+
+    event.set_object(pset)
+    resp = event.store()
+    if resp is None or resp.status_code == 200:
+        return HttpResponse(status=204)
+    else:
+        return HttpResponse(status=resp.status_code)
