@@ -3,7 +3,7 @@ $(function(){
 	$("a").filter(function(index){
 		var href = $(this).attr("href");
 		if(href && href.match(/^http:\/\/cdn.mprog.nl\/prog-ai-new\/pset[0-9]+\.zip/)){
-			$(this).attr('href', base_url+encodeURIComponent(href))
+			$(this).attr('href', base_url+href)
 		}
 	})
 })
