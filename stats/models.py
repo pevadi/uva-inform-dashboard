@@ -29,6 +29,7 @@ class Variable(PolymorphicModel):
     num_bins = models.PositiveSmallIntegerField(default=10, blank=True)
     last_consumed_activity_pk = models.PositiveIntegerField(
         default=0, blank=True)
+    order = models.PositiveSmallIntegerField(default=0, blank=True)
     type = models.CharField(choices=VARIABLE_TYPES, default='IN', max_length=3)
     post_processing = models.CharField(choices=POST_PROCESSING_TYPES,
             default='NON', max_length=3)

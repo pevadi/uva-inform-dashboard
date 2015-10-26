@@ -22,7 +22,8 @@ def render_dashboard(request):
         ).store()
 
     return render(request, "dashboard.html", {
-        'input_variables': course.variable_set.exclude(type='OUT')
+        'input_variables': course.variable_set.exclude(
+            type='OUT').order_by('order')
     });
 
 @identity_required
