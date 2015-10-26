@@ -25,6 +25,8 @@ def update(request):
             epoch = datetime.combine(
                     res['start_date__max'], datetime.min.time())
         activities = xapi.getAllStatementsByRelatedActitity(course.url, epoch)
+        for activity in activities:
+            Activity.extract_from_statement(activity)
         count += len(activities)
         for variable in course.variable_set.all():
             variable.update_from_storage()
