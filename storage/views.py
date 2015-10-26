@@ -6,7 +6,6 @@ from django.conf import settings
 from identity import identity_required
 from .helpers import *
 
-import datetime
 import json
 
 def update(request):
@@ -14,6 +13,7 @@ def update(request):
     from course.models import Course
     from .models import Activity
     from storage import XAPIConnector
+    from datetime import datetime
     xapi = XAPIConnector()
     count = 0
     for course in Course.objects.filter(active=True):
