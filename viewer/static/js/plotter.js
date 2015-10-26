@@ -32,11 +32,15 @@ function Plotter(container){
 		$(container).empty();
 	};
 
+	var axis_label = "hoeveelheid";
+	_this.set_axis_label = function(axis){ axis_label = axis };
+	_this.get_axis_label = function(){ return axis_label };
+
 	_this.show_no_data_message = function(){
 		_this.clear_canvas();
 		$(container).append($("<div>")
 			.addClass("no-data-message")
-			.text("Er zijn helaas nog geen resultaten beschikbaar"));
+			.text("Er zijn nog geen resultaten beschikbaar"));
 	};
 }
 
@@ -104,14 +108,14 @@ function GaussPlotter(container){
 			.style("text-anchor", "end")
 			.attr("x", width-10)
 			.attr("y", 30)
-			.text("final grade");
+			.text(_this.get_axis_label());
 
 		chart.append("g")
 			.attr("class", "y axis")
 			.call(yAxis)
 			.append("text")
 			.attr("transform", "rotate(-90)")
-			.attr("y", 6)
+			.attr("y", -50)
 			.attr("dy", ".71em")
 			.style("text-anchor", "end")
 			.text("probability");
@@ -260,14 +264,14 @@ function BarPlotter(container){
 			.style("text-anchor", "end")
 			.attr("x", width-10)
 			.attr("y", sliderHeight+10)
-			.text("average grade");
+			.text(_this.get_axis_label());
 
 		chart.append("g")
 			.attr("class", "y axis")
 			.call(yAxis)
 			.append("text")
 			.attr("transform", "rotate(-90)")
-			.attr("y", 6)
+			.attr("y", -50)
 			.attr("dy", ".71em")
 			.style("text-anchor", "end")
 			.text("# students");

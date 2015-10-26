@@ -16,6 +16,7 @@ class AssignmentLinkedVariableAdmin(PolymorphicChildModelAdmin):
 
 class VariableAdmin(PolymorphicParentModelAdmin):
     list_display = ('name', 'label', 'course')
+    list_filter = ('type',)
     base_model = Variable
     child_models = (
         (SingleEventVariable, SingleEventVariableAdmin),

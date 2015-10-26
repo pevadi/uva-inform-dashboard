@@ -37,6 +37,7 @@ def get_variable_stats(request, variable_name):
     else:
         return HttpResponseBadRequest("User does not belong to a course group")
 
+    from datetime import timedelta
 
     # Calculate course-relative time context
     course_datetime_now = group.calculate_course_datetime(timezone.now())
@@ -87,12 +88,15 @@ def get_variable_stats(request, variable_name):
             student_bin = index
 
         predictions = {}
-        for output_variable in Variable.objects.filter(type='OUT',
-                course=group.course):
+        for output_variable in Variable.objects.exclude(type='IN').exclude(
+                pk=variable.pk).filter(course=group.course):
             predictions[output_variable.name] = (
                 get_gauss_params(output_variable,
                     student__in=get_students_by_variable_values(variable,
                         lower_points[index], upper_points[index], index)))
+            predictions[output_variable.name]['label'] = output_variable.label
+            predictions[output_variable.name]["axis"] = (
+                    output_variable.axis_label or output_variable.label)
 
         bin_stats.append({
             'id': index,
@@ -102,5 +106,9 @@ def get_variable_stats(request, variable_name):
             'predictions': predictions
         });
 
-    return JsonResponse({"student_bin": student_bin, "bins": bin_stats},
-            safe=False)
+    return JsonResponse({
+            "student_bin": student_bin,
+            "bins": bin_stats,
+            "label": variable.label,
+            "axis": variable.axis_label or variable.label
+        },safe=False)

@@ -187,10 +187,12 @@ $(function(){
 						$("#output_var_selector").append(
 							$("<option>")
 								.attr('value', variable)
-								.text(variable));
+								.text(d['predictions'][variable]['label']));
 					}
 					if(has_prediction_variables){
-						$("#output_var_selector").show()
+						$("#output_var_selector").show();
+						output_variable = $("#output_var_selector").val();
+						output_plot.set_axis_label(d['predictions'][output_variable]['axis']);
 						output_plot.draw();
 					}else{
 						output_plot.show_no_data_message();
@@ -198,6 +200,7 @@ $(function(){
 				}
 			});
 
+			input_plot.set_axis_label(data['axis'])
 			input_plot.draw();
 			input_plot.on("select-bin", function(bin){
 				prediction = predictions[bin]

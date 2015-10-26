@@ -10,10 +10,15 @@ import math
 
 class Variable(PolymorphicModel):
     """Model containing information on variables used in predictions."""
-    VARIABLE_TYPES = (('IN', "Input variable"), ('OUT', "Output variable"))
+    VARIABLE_TYPES = (
+        ('IN', "Input variable"),
+        ('OUT', "Output variable"),
+        ('I/O', "Both input and output variable")
+    )
 
     name = models.CharField(max_length=100, unique=True, blank=True)
     label = models.CharField(max_length=255, blank=True)
+    axis_label = models.CharField(max_length=255, null=True, blank=True)
     course = models.ForeignKey('course.Course')
     num_bins = models.PositiveSmallIntegerField(default=10, blank=True)
     last_consumed_activity_pk = models.PositiveIntegerField(
@@ -59,6 +64,7 @@ class Variable(PolymorphicModel):
                 course=self.course)
 
             group = groups[0]
+
             group.members.add(student)
             value_history_item.group = group
             # Set course timestamp relative to start

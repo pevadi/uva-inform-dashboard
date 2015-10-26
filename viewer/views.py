@@ -22,7 +22,7 @@ def render_dashboard(request):
         ).store()
 
     return render(request, "dashboard.html", {
-        'input_variables': course.variable_set.filter(type='IN')
+        'input_variables': course.variable_set.exclude(type='OUT')
     });
 
 @identity_required
