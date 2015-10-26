@@ -195,7 +195,7 @@ class XAPIConnector(object):
                     else:
                         resource = None
                 except Exception as e:
-                    print "Error decoding response:", resp
+                    print "Error decoding response:", resp.text
                     return False
             return statements
         except IOError as e:
@@ -209,6 +209,7 @@ class XAPIConnector(object):
         if epoch is not None:
             if epoch.tzinfo is None:
                 epoch = epoch.replace(tzinfo=pytz.utc)
+            epoch = epoch.replace(microsecond=0)
             filters['since'] = epoch.isoformat()
 
         return self.getFilteredStatements(filters)

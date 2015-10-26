@@ -179,9 +179,6 @@ class AssignmentLinkedVariable(SingleEventVariable):
         last_consumed_activity = None
         values = []
 
-        if not timezone.is_aware(compare_time):
-            compare_time = timezone.make_aware(compare_time)
-
         if self.compare_method == 'A':
             compare_fn = lambda a, c: a-c
         else:
@@ -195,13 +192,14 @@ class AssignmentLinkedVariable(SingleEventVariable):
 
             if self.compare_method == 'A':
                 compare_time = assignment.date_available
-                compare_fn = lambda a, c: a-c
             else:
                 compare_time = assignment.date_due
-                compare_fn = lambda a, c: c-a
 
             if compare_time is None:
                 return [], last_consumed_activity
+
+            if not timezone.is_aware(compare_time):
+                compare_time = timezone.make_aware(compare_time)
 
             if (self.types.filter(uri=activity.type).exists() and
                     self.verbs.filter(uri=activity.verb).exists()):

@@ -6,7 +6,30 @@ from django.conf import settings
 from identity import identity_required
 from .helpers import *
 
+import datetime
 import json
+
+def update(request):
+    from django.db.models import Max
+    from course.models import Course
+    from .models import Activity
+    from storage import XAPIConnector
+    xapi = XAPIConnector()
+    count = 0
+    for course in Course.objects.filter(active=True):
+        res = Activity.objects.filter(course=course.url).aggregate(Max('time'))
+        if res['time__max'] is not None:
+            epoch = res['time__max']
+        else:
+            res = course.coursegroup_set.aggregate(Max('start_date'))
+            epoch = datetime.combine(
+                    res['start_date__max'], datetime.min.time())
+        activities = xapi.getAllStatementsByRelatedActitity(course.url, epoch)
+        count += len(activities)
+        for variable in course.variable_set.all():
+            variable.update_from_storage()
+    return HttpResponse(count)
+
 
 @csrf_exempt
 @identity_required
