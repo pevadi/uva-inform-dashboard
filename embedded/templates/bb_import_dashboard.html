@@ -7,7 +7,7 @@ if(dashboard_link.length){
   jQuery.ajax({method: "HEAD", url:dashboard_link.attr("href")}).done(
     function(_1,_2,xhr){
       if( xhr.status == 200 ){
-        jQuery("#dashboardUvaInform").append(jQuery("<iframe width='850' height='300'>").attr("src", dashboard_link.attr("href")));
+        jQuery("#dashboardUvaInform").append(jQuery("<iframe width='850' height='350'>").attr("src", dashboard_link.attr("href")));
       }
     }
   );
