@@ -16,6 +16,12 @@ class Variable(PolymorphicModel):
         ('I/O', "Both input and output variable")
     )
 
+    POST_PROCESSING_TYPES = (
+        ('S2M', 'Convert from seconds to minutes'),
+        ('S2H', 'Convert from seconds to hours'),
+        ('NON', "Don't perform post processing"),
+    )
+
     name = models.CharField(max_length=100, unique=True, blank=True)
     label = models.CharField(max_length=255, blank=True)
     axis_label = models.CharField(max_length=255, null=True, blank=True)
@@ -24,6 +30,8 @@ class Variable(PolymorphicModel):
     last_consumed_activity_pk = models.PositiveIntegerField(
         default=0, blank=True)
     type = models.CharField(choices=VARIABLE_TYPES, default='IN', max_length=3)
+    post_processing = models.CharField(choices=POST_PROCESSING_TYPES,
+            default='NON', max_length=3)
 
     def update_from_storage(self):
         """Updates the appropriate stats models based on storage date.
@@ -169,8 +177,15 @@ class SingleEventVariable(Variable):
     def calculate_statistics_from_values(self, value_history):
         from course.models import CourseGroup
         aggregator = self._get_aggregator()
-        return (value_history.values('student','group').
+        statistics = (value_history.values('student','group').
             annotate(value=models.Avg('value')))
+        if self.post_processing == "S2M":
+            for statistic in statistics:
+                statistic['value'] = statistic['value'] / float(60)
+        elif self.post_processing == "S2H":
+            for statistic in statistics:
+                statistic['value'] = statistic['value'] / float(3600)
+        return statistics
 
 
 class AssignmentLinkedVariable(SingleEventVariable):
