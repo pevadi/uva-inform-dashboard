@@ -16,7 +16,7 @@ $(function(){
 		.attr("src", "//{{ request.get_host }}?"+signed_params)
 		.css("border", "0")
 		.css('width', "100%")
-		.css("height", "270px");
+		.css("height", "340px");
 
 	dashboard_container.append(dashboard_iframe);
 	dashboard_container.append(
