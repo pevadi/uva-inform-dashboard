@@ -170,7 +170,7 @@ $(function(){
 		$("#output_var_selector").hide();
 		var selected = this;
 		d3.json("/stats/"+selected.value+"/", function(error, data) {
-			if( !('bins' in data) ){
+			if( !data || !('bins' in data) ){
 				input_plot.show_no_data_message()
 				output_plot.clear_canvas()
 				return; 
