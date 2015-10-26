@@ -11,11 +11,15 @@ class ValueHistoryAdmin(admin.ModelAdmin):
 class SingleEventVariableAdmin(PolymorphicChildModelAdmin):
     base_model = SingleEventVariable
 
+class AssignmentLinkedVariableAdmin(PolymorphicChildModelAdmin):
+    base_model = AssignmentLinkedVariable
+
 class VariableAdmin(PolymorphicParentModelAdmin):
     list_display = ('name', 'label', 'course')
     base_model = Variable
     child_models = (
         (SingleEventVariable, SingleEventVariableAdmin),
+        (AssignmentLinkedVariable, AssignmentLinkedVariableAdmin),
     )
 
 admin.site.register(Variable, VariableAdmin)

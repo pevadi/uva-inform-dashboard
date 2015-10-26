@@ -60,3 +60,10 @@ class CourseGroup(models.Model):
     def __repr__(self):
         return "CourseGroup(%s::%s)" % (self.course.title, self.name)
 
+
+class Assignment(models.Model):
+    title = models.CharField(max_length=255)
+    url = models.URLField(max_length=255)
+    date_available = models.DateTimeField(null=True, blank=True)
+    date_due = models.DateTimeField(null=True, blank=True)
+    course = models.ForeignKey(Course)
