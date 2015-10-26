@@ -35,6 +35,7 @@
 		width: 50%;
 		height: 305px;
 		font: 10px sans-serif;
+		text-align: center;
 	}
 
 	#input_display, #output_display {
@@ -135,14 +136,16 @@
 </style>
 <div id="display_container">
 	<div id="input_display_container">
+		<h2>Studiegedrag</h2>
 		<div class="selector_container">
 			<select id='input_var_selector' class="form-control">
-			{% for variable in input_variables %}<option value="{{ variable.name }}">Vergelijk: {{ variable.label }}</option>{% endfor %}
+			{% for variable in input_variables %}<option value="{{ variable.name }}">{{ variable.label }}</option>{% endfor %}
 			</select>
 		</div>
 		<div id="input_display"></div>
 	</div>
 	<div id="output_display_container">
+		<h2>Verwacht studieresultaat</h2>
 		<div class="selector_container">
 			<select id='output_var_selector' class="form-control">
 				<option value="">Er zijn nog geen studieresultaten beschikbaar</option>
