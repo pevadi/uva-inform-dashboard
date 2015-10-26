@@ -1,25 +1,223 @@
 {% load staticfiles %}
 <!DOCTYPE html>
 <html>
-<head><title>Stats viewer</title>
+<head><title>UvAInform dashboard</title>
 </head>
 <body>
 <style>
-	#bar_stats {
+	#display_container {
 		width: 800px;
 		margin: auto;
 	}
+
+	/* Taken from Bootstrap (http://getbootstrap.com/) */
+	.form-control {
+		display: block;
+		width: 100%;
+		height: 34px;
+		padding: 6px 12px;
+		font-size: 14px;
+		line-height: 1.42857143;
+		color: #555;
+		background-color: #fff;
+		background-image: none;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		-webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+		box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+		-webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
+		-o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+		transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+	}
+
+	#input_display_container, #output_display_container {
+		float: left;
+		width: 50%;
+		height: 305px;
+		font: 10px sans-serif;
+	}
+
+	#input_display, #output_display {
+		width: 100%;
+		height: 250px;
+	}
+
+	.selector_container {
+		padding: 10px;
+	}
+
+	.no-data-message {
+		height: 100%;
+		width: 100%;
+		padding: 10px;
+		font-size: 16px;
+		text-align: center;
+		vertical-align: center;
+		background: #E8E8E8;
+		color: #333;
+
+	}
+
+	/** Plotter Stylsheets **/
+	.axis path,
+	.axis line {
+		fill: none;
+		stroke: #000;
+		shape-rendering: crispEdges;
+	}
+
+	.slider .background {
+		fill: #F9CB9C;
+	}
+
+	.slider .handle {
+	  fill: #fff;
+	  stroke: #000;
+	  stroke-opacity: .5;
+	  stroke-width: 1.25px;
+	  cursor: ew-resize;
+	}
+
+	.slider .handle:hover,
+	.slider .handle:active{
+		fill: #000;
+		fill-opacity: .5;
+	}
+
+	.x.axis .domain {
+	  fill: none;
+	  stroke: none;
+	}
+
+	.x.axis.lined .domain {
+	  stroke: #000;
+	}
+
+	.x.axis .halo {
+	  fill: none;
+	  stroke: none;
+	}
+
+	.line {
+		fill: none;
+		stroke: steelblue;
+		stroke-width: 1.5px;
+	}
+
+	.bargroup rect.bar {
+		fill: #cfe2f3;
+	}
+
+	.bargroup.bar-you rect.bar {
+		fill: #03A9F4;
+	}
+	.bargroup:hover rect.bar {
+		fill: #f9cb9c;
+		cursor: pointer;
+	}
+	.bargroup.bar-you:hover{
+		cursor: pointer;
+	}
+	.bargroup.bar-you:hover rect.bar {
+		fill: #FF9800;
+	}
+
+	.bargroup.active rect.bar {
+		fill: #f9cb9c;
+		stroke: black;
+		stroke-width: 3px;
+	}
+	.bargroup.active.bar-you rect.bar {
+		fill: #FF9800;
+		stroke: black;
+		stroke-width: 3px;
+	}
 </style>
-<div id="bar_stats"></div>
-<div id="prediction"></div>
+<div id="display_container">
+	<div id="input_display_container">
+		<div class="selector_container">
+			<select id='input_var_selector' class="form-control">
+			{% for variable in input_variables %}<option value="{{ variable.name }}">Vergelijk: {{ variable.label }}</option>{% endfor %}
+			</select>
+		</div>
+		<div id="input_display"></div>
+	</div>
+	<div id="output_display_container">
+		<div class="selector_container">
+			<select id='output_var_selector' class="form-control">
+				<option value="">Er zijn nog geen studieresultaten beschikbaar</option>
+			</select>
+		</div>
+		<div id="output_display"></div>
+	</div>
+</div>
 <script type='text/javascript' src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 <script>window.jQuery || document.write('<script src="{% static "js/jquery-1.11.3.min.js" %}">\x3C/script>')</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
 <script>window.d3 || document.write('<script src="{% static "js/d3.min.js" %}">\x3C/script>')</script>
-{% include "barchart.html" with load_fn="loadbar" %}
+<script type='text/javascript' src="{% static 'js/gaussian.js' %}"></script>
+<script type='text/javascript' src="{% static 'js/plotter.js' %}"></script>
 <script>
 $(function(){
-	loadbar("#bar_stats");
+	var input_plot = new BarPlotter("#input_display");
+	input_plot.initialize();
+	var output_plot = new GaussPlotter("#output_display");
+	output_plot.initialize();
+
+	var prediction = {};
+    $("#input_var_selector").change(function(){
+		$("#output_var_selector").empty();
+		$("#output_var_selector").hide();
+		var selected = this;
+		d3.json("/stats/"+selected.value+"/", function(error, data) {
+			if( !('bins' in data) ){
+				input_plot.show_no_data_message()
+				output_plot.clear_canvas()
+				return; 
+			}
+			var predictions = {};
+
+			data['bins'].forEach(function(d, i){
+				predictions[""+d['id']] = d['predictions'];
+				if(i == 0){
+					$("#output_var_selector").show();
+					var has_prediction_variables = false;
+					for(variable in d['predictions']){
+						has_prediction_variables = true;
+						$("#output_var_selector").append(
+							$("<option>")
+								.attr('value', variable)
+								.text(variable));
+					}
+					if(has_prediction_variables){
+						$("#output_var_selector").show()
+						output_plot.draw();
+					}else{
+						output_plot.show_no_data_message();
+					}
+				}
+			});
+
+			input_plot.draw();
+			input_plot.on("select-bin", function(bin){
+				prediction = predictions[bin]
+				output_variable = $("#output_var_selector").val()
+				if(output_variable){
+					output_plot.load_data(prediction[output_variable]);
+				}
+			});
+			input_plot.load_data(data);
+		});
+
+    });
+	$("#output_var_selector").change(function(){
+		if($(this).val()){
+			output_plot.load_data(prediction[output_variable]);
+		}
+	});
+
+    $("#input_var_selector").change();
+	$("#output_var_selector").change();
 });
 </script>
 </html>

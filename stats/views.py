@@ -85,7 +85,7 @@ def get_variable_stats(request, variable_name):
                     s['value'] > lower_points[index])
 
         # Check if we found the viewer's bin
-        if assignment_fn(student_statistic):
+        if student_statistic is not None and assignment_fn(student_statistic):
             student_bin = index
 
         predictions = {}
