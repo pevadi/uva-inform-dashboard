@@ -19,7 +19,14 @@ class Variable(PolymorphicModel):
     POST_PROCESSING_TYPES = (
         ('S2M', 'Convert from seconds to minutes'),
         ('S2H', 'Convert from seconds to hours'),
+        ('5.5', 'Convert to boolean whether bigger than 5.5'),
         ('NON', "Don't perform post processing"),
+    )
+
+    OUTPUT_CHART_TYPES = (
+        ('NON', 'No output chart'),
+        ('GSS', 'Gauss plot'),
+        ('PIE', 'Pie chart'),
     )
 
     name = models.CharField(max_length=100, unique=True, blank=True)
@@ -33,6 +40,8 @@ class Variable(PolymorphicModel):
     type = models.CharField(choices=VARIABLE_TYPES, default='IN', max_length=3)
     post_processing = models.CharField(choices=POST_PROCESSING_TYPES,
             default='NON', max_length=3)
+    output_chart = models.CharField(choices=OUTPUT_CHART_TYPES, default='NON',
+            max_length=3)
 
     def update_from_storage(self):
         """Updates the appropriate stats models based on storage date.
@@ -186,6 +195,9 @@ class SingleEventVariable(Variable):
         elif self.post_processing == "S2H":
             for statistic in statistics:
                 statistic['value'] = statistic['value'] / float(3600)
+        elif self.post_processing == "5.5":
+            for statistic in statistics:
+                statistic['value'] = int(statistic['value'] >= 5.5)
         return statistics
 
 

@@ -134,6 +134,10 @@
 		stroke: black;
 		stroke-width: 3px;
 	}
+
+	.arc path {
+		  stroke: #fff;
+	}
 </style>
 <div id="display_container">
 	<div id="input_display_container">
@@ -162,12 +166,11 @@
 <script type='text/javascript' src="{% static 'js/gaussian.js' %}"></script>
 <script type='text/javascript' src="{% static 'js/plotter.js' %}"></script>
 <script>
+	var output_plot;
 $(function(){
 	var first_var_select = true, first_bin_select = true;
 	var input_plot = new BarPlotter("#input_display");
 	input_plot.initialize();
-	var output_plot = new GaussPlotter("#output_display");
-	output_plot.initialize();
 
 	var prediction = {};
     $("#input_var_selector").change(function(){
@@ -182,7 +185,6 @@ $(function(){
 		d3.json("/stats/"+selected.value+"/", function(error, data) {
 			if( !data || !('bins' in data) ){
 				input_plot.show_no_data_message("Deze gegevens zijn nog niet binnen gekomen.");
-				output_plot.clear_canvas()
 				return; 
 			}
 			var predictions = {};
@@ -202,6 +204,12 @@ $(function(){
 					if(has_prediction_variables){
 						$("#output_var_selector").show();
 						output_variable = $("#output_var_selector").val();
+						if(d['predictions'][output_variable]['chart'] == "GSS"){
+							output_plot = new GaussPlotter("#output_display");
+						}else{
+							output_plot = new PiePlotter("#output_display");
+						}
+						output_plot.initialize();
 						output_plot.set_axis_label(d['predictions'][output_variable]['axis']);
 						output_plot.draw();
 					}else{
@@ -221,6 +229,7 @@ $(function(){
 				prediction = predictions[bin]
 				output_variable = $("#output_var_selector").val()
 				if(output_variable){
+					output_plot.draw();
 					output_plot.load_data(prediction[output_variable]);
 				}
 			});
@@ -230,6 +239,15 @@ $(function(){
     });
 	$("#output_var_selector").change(function(){
 		if($(this).val()){
+			output_variable = $(this).val()
+			if(prediction[output_variable]['chart'] == "GSS"){
+				output_plot = new GaussPlotter("#output_display");
+			}else{
+				output_plot = new PiePlotter("#output_display");
+			}
+			output_plot.initialize();
+			output_plot.set_axis_label(prediction[output_variable]['axis']);
+			output_plot.draw();
 			output_plot.load_data(prediction[output_variable]);
 		}
 	});

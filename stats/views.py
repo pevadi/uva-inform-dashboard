@@ -94,6 +94,7 @@ def get_variable_stats(request, variable_name):
                 get_gauss_params(output_variable,
                     student__in=get_students_by_variable_values(variable,
                         lower_points[index], upper_points[index], index)))
+            predictions[output_variable.name]['chart'] = output_variable.output_chart
             predictions[output_variable.name]['label'] = output_variable.label
             predictions[output_variable.name]["axis"] = (
                     output_variable.axis_label or output_variable.label)

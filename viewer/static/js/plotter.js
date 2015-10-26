@@ -45,6 +45,83 @@ function Plotter(container){
 	};
 }
 
+function PiePlotter(container){
+	var _parent = new Plotter(container);
+	var _this = $.extend(this, _parent);
+
+	var margin, width, height, radius;
+	var chart, pie, color, arc;
+
+	_this.initialize = function(){
+
+		margin = { top: 20, right: 20, bottom: 40, left: 50 };
+		width = _this.get_container_width() - margin.left - margin.right;
+		height = _this.get_container_height() - margin.top - margin.bottom;
+        radius = Math.min(width, height) / 2;
+
+        color = d3.scale.ordinal()
+                .range(["red", "green"]);
+
+        arc = d3.svg.arc()
+                .outerRadius(radius - 10)
+                    .innerRadius(0);
+
+        pie = d3.layout.pie()
+                .sort(null)
+                    .value(function(d) { return d; });
+
+	};
+
+	_this.draw = function(){
+		_this.clear_canvas();
+
+        chart = d3.select(container).append("svg")
+            .attr("width", width)
+            .attr("height", height)
+          .append("g")
+            .attr("transform", "translate(" + (width-40) / 2 + "," + height / 2 + ")");
+
+	};
+
+	_this.load_data = function(data){
+		if( data ){
+            data = [1-data['mean'], data['mean']];
+            var g = chart.selectAll(".arc")
+              .data(pie(data))
+            .enter().append("g")
+              .attr("class", "arc");
+
+            g.append("path")
+              .attr("d", arc)
+              .style("fill", function(d,i) { return color(i); });
+
+            var legend = chart.append("g")
+              .attr("class", "legend")
+              .attr("width", radius)
+              .attr("height", radius * 2)
+              .selectAll("g")
+              .data(data)
+              .enter().append("g")
+              .attr("transform", function(d, i) { return "translate("+radius+"," + i * 20 + ")"; });
+
+            legend.append("rect")
+              .attr("width", 18)
+              .attr("height", 18)
+              .style("fill", function(d, i) { return color(i); });
+
+            legend.append("text")
+              .attr("x", 24)
+              .attr("y", 9)
+              .attr("dy", ".35em")
+              .text(function(d, i) { return (i?"Geslaagd":"Niet geslaagd"); });
+
+		}else{
+			_this.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+		}
+	};
+}
+
+
 function GaussPlotter(container){
 	var _parent = new Plotter(container);
 	var _this = $.extend(this, _parent);
