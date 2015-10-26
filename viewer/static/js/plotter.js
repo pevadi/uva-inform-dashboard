@@ -36,11 +36,12 @@ function Plotter(container){
 	_this.set_axis_label = function(axis){ axis_label = axis };
 	_this.get_axis_label = function(){ return axis_label };
 
-	_this.show_no_data_message = function(){
+	_this.show_no_data_message = function(msg){
+		if(msg == undefined) msg = "Er zijn nog geen resultaten beschikbaar";
 		_this.clear_canvas();
 		$(container).append($("<div>")
 			.addClass("no-data-message")
-			.text("Er zijn nog geen resultaten beschikbaar"));
+			.text(msg));
 	};
 }
 
@@ -138,7 +139,7 @@ function GaussPlotter(container){
 			}
 			curve.transition().attr("d", line(data));
 		}else{
-			_this.show_no_data_message();
+			_this.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
 		}
 	}
 }
