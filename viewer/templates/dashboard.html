@@ -171,7 +171,7 @@ $(function(){
 		var selected = this;
 		d3.json("/stats/"+selected.value+"/", function(error, data) {
 			if( !data || !('bins' in data) ){
-				input_plot.show_no_data_message()
+				input_plot.show_no_data_message("Deze gegevens zijn nog niet binnen gekomen.");
 				output_plot.clear_canvas()
 				return; 
 			}
@@ -195,7 +195,7 @@ $(function(){
 						output_plot.set_axis_label(d['predictions'][output_variable]['axis']);
 						output_plot.draw();
 					}else{
-						output_plot.show_no_data_message("Deze gegevens zijn nog niet binnen gekomen.");
+						output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
 					}
 				}
 			});
