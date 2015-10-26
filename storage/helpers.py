@@ -24,10 +24,13 @@ def store_event_in_remote_storage(event, user):
     return event
 
 def import_bb_gradecenter_export(export_file, fields=None, verb=None,
-        activity_type=None, course=None, timedelta=None):
+        activity_type=None, course=None, timedelta=None, quoting=None):
     import csv
     from django.utils import timezone
-    reader = csv.DictReader(export_file, delimiter=",", quoting=csv.QUOTE_NONE)
+    if quoting is None:
+        reader = csv.DictReader(export_file, delimiter=",", quoting=csv.QUOTE_NONE)
+    else:
+        reader = csv.DictReader(export_file, delimiter=",")
     fields = fields or reader.fieldnames
     verb = verb or "http://adlnet.gov/expapi/verbs/experienced"
     activity_type = (activity_type or
