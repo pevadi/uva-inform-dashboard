@@ -10,19 +10,6 @@ import json
 
 @csrf_exempt
 @identity_required
-def store_event(request):
-    try:
-        event = json.loads(request.body)
-    except ValueError:
-        return HttpResponseBadRequest()
-
-    user = request.session.get("authenticated_user")
-    stored_event = store_event_in_remote_storage(event, user)
-
-    return HttpResponse(json.dumps(stored_event))
-
-@csrf_exempt
-@identity_required
 def store_video_watch_event(request):
     video_id = request.POST.get("video", None)
     duration = request.POST.get("duration", None)
