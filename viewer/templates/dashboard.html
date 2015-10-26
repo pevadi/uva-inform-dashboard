@@ -163,6 +163,7 @@
 <script type='text/javascript' src="{% static 'js/plotter.js' %}"></script>
 <script>
 $(function(){
+	var first_var_select = true, first_bin_select = true;
 	var input_plot = new BarPlotter("#input_display");
 	input_plot.initialize();
 	var output_plot = new GaussPlotter("#output_display");
@@ -170,6 +171,11 @@ $(function(){
 
 	var prediction = {};
     $("#input_var_selector").change(function(){
+		if( first_var_select ){
+			first_var_select = false;
+		}else{
+			log_interaction();
+		}
 		$("#output_var_selector").empty();
 		$("#output_var_selector").hide();
 		var selected = this;
@@ -207,6 +213,11 @@ $(function(){
 			input_plot.set_axis_label(data['axis'])
 			input_plot.draw();
 			input_plot.on("select-bin", function(bin){
+				if( first_bin_select ){
+					first_bin_select = false;
+				}else{
+					log_interaction();
+				}
 				prediction = predictions[bin]
 				output_variable = $("#output_var_selector").val()
 				if(output_variable){
@@ -226,5 +237,17 @@ $(function(){
     $("#input_var_selector").change();
 	$("#output_var_selector").change();
 });
+
+var interaction_log_timer;
+function log_interaction(){
+	if(interaction_log_timer) clearTimeout(interaction_log_timer)
+	interaction_log_timer = setTimeout(send_interaction_event, 1000)
+}
+
+function send_interaction_event(){
+	interaction_log_timer = null;
+	var signed_params = "{{ request.signed_url_params_unquoted|safe }}";
+	$.post("//{{ request.get_host }}{% url 'storage:store_interacted_event' %}?"+signed_params);
+}
 </script>
 </html>
