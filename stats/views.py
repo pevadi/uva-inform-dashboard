@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest,\
         HttpResponseNotAllowed
+from django.utils import timezone
 
 from .helpers import *
 from .models import Variable, ValueHistory
@@ -36,12 +37,9 @@ def get_variable_stats(request, variable_name):
     else:
         return HttpResponseBadRequest("User does not belong to a course group")
 
-    from django.utils import timezone
-    from datetime import timedelta
-    fake_date = timezone.now() + timedelta(weeks=3)
 
     # Calculate course-relative time context
-    course_datetime_now = group.calculate_course_datetime(fake_date)
+    course_datetime_now = group.calculate_course_datetime(timezone.now())
     # Collect relevant value history
     value_history = ValueHistory.objects.filter(variable=variable, group=group,
             course_datetime__lte=course_datetime_now)
