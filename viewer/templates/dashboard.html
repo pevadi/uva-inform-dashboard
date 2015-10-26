@@ -213,7 +213,7 @@ $(function(){
 						output_plot.set_axis_label(d['predictions'][output_variable]['axis']);
 						output_plot.draw();
 					}else{
-						output_plot = Plotter("#output_display")
+						output_plot = new Plotter("#output_display");
 						output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
 					}
 				}
