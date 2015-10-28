@@ -262,3 +262,17 @@ class CompileEvent(XAPIEvent):
     def set_object(self, object_id, *args, **kwargs):
         super(CompileEvent, self).set_object(object_id,
             "http://activitystrea.ms/schema/1.0/application", *args, **kwargs)
+
+
+class PresenceEvent(XAPIEvent):
+
+    def __init__(self, *args, **kwargs):
+        super(PresenceEvent, self).__init__(*args, **kwargs)
+        self.set_verb(
+                "http://activitystrea.ms/schema/1.0/attend",
+            verb_name={"en-US": "attended"})
+
+    def set_object(self, object_id, *args, **kwargs):
+        super(PresenceEvent, self).set_object(object_id,
+                "http://adlnet.gov/expapi/activities/meeting", *args, **kwargs)
+

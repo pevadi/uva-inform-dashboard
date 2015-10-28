@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Student presence form</title>
+        <link rel='stylesheet' href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" />
+    </head>
+    <body>
+    <style>
+        label {
+            font-weight: bold;
+        }
+    </style>
+    <h2>Presence for group {{ group.course.title }} - {{ group.label }}</h2>
+    <form action="{% url 'storage:store_presence_events' %}?group={{ group.pk }}" method="post">
+        {% csrf_token %}
+        <div class="form-inline well">
+            <label>Activity</label>
+            <input type='text' class='form-control' style='width: 250px'
+                value="{{ group.course.url }}" readonly />/
+            <input type='text' class='form-control'
+                value="{{ group.name }}" readonly />/
+            <input type='text' class='form-control'
+                name='activity_meeting_type' value='hoorcollege' />/
+            <input type='text' name='activity_meeting_date'
+                class='form-control' value='{{date.isoformat}}' />
+        </div>
+        <div class='well well-sm'>
+            <button class='btn btn-primary' type='submit'>
+                Opslaan
+            </button>
+            <a class='btn btn-default pull-right'
+                    onclick="$('input[type=checkbox]').prop('checked', false)">
+                Deselect all
+            </a>
+            <a class='btn btn-default pull-right'
+                onclick="$('input[type=checkbox]').prop('checked', true)">
+                Select all
+            </a>
+        </div>
+        <table class="table">
+            <thead>
+                <th> Username </th>
+                <th> Full name </th>
+                <th> Present </th>
+            </thead>
+            <tbody>
+            {% for student in students %}
+            <tr>
+                <td>
+                    {{ student.identification }}
+                </td>
+                <td>
+                    {{ student.label }}
+                </td>
+                <td>
+                    <input name="{{ student.pk }}" type='checkbox' checked />
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div class='well well-sm'>
+            <button class='btn btn-primary' type='submit'>
+                Opslaan
+            </button>
+        </div>
+        </form>
+    <script type='text/javascript' src='https://code.jquery.com/jquery-1.11.3.min.js'></script>
+    </body>
+</html>

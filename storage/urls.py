@@ -3,6 +3,8 @@ from views import *
 
 urlpatterns = [
     url(r'^update/?$', update, name='update'),
+    url(r'^events/store_presence_events/?$', store_presence_events,
+        name='store_presence_events'),
     url(r'^events/video/watch/?$', store_video_watch_event,
         name="store_video_watch_event"),
     url(r'^events/webpage/ping/?$', store_webpage_ping_event,

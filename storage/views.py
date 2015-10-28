@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
@@ -32,6 +32,38 @@ def update(request):
             variable.update_from_storage()
     return HttpResponse(count)
 
+
+def store_presence_events(request):
+    from course.models import CourseGroup
+    from datetime import date
+    group_pk = request.GET.get('group', None)
+    group = get_object_or_404(CourseGroup, pk=group_pk)
+    if request.method == "GET":
+        return render(request, 'store_presence_form.html', {
+            'group': group,
+            'date': date.today(),
+            'students': group.members.all().order_by('last_name')})
+    else:
+        activity_meeting_type = request.POST.get("activity_meeting_type",
+                'hoorcollege')
+        activity_meeting_date = request.POST.get("activity_meeting_date",
+                date.today().isoformat())
+        activity = "/".join([
+            group.course.url,
+            group.name,
+            activity_meeting_type,
+            activity_meeting_date])
+        count = 0
+        absent = []
+        for student in group.members.all():
+            if request.POST.get(str(student.pk)) == "on":
+                event = PresenceEvent(student.identification, group.course.url)
+                event.set_object(activity)
+                event.store()
+                count += 1
+            else:
+                absent.append(student.label)
+        return HttpResponse("%d present, absent were: %s" % (count, absent))
 
 @csrf_exempt
 @identity_required
