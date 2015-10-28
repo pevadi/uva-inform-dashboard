@@ -35,9 +35,13 @@ def add_students(request):
                             identification=row[0],
                             defaults={"first_name": row[1], "last_name":
                                 row[2]})
+                    student.first_name = row[1]
+                    student.last_name = row[2]
+                    student.save()
                     group.members.add(student)
                     if created:
                         count += 1
+                group.save()
                 return HttpResponse("%d new students created" % (count,))
             except Exception as e:
                 return HttpResponse("Something went wrong: %s" % (e,))
