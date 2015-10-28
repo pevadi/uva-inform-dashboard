@@ -4,8 +4,31 @@ from django.utils import timezone
 from datetime import datetime
 
 class Student(models.Model):
-    label = models.CharField(max_length=255)
     identification = models.CharField(max_length=255)
+    first_name = models.CharField(max_length=255, blank=True)
+    last_name = models.CharField(max_length=255, blank=True)
+
+    @property
+    def has_treatment(self):
+        from viewer.models import GroupAssignment
+        try:
+            group = GroupAssignment.objects.get(student=self.identification)
+        except GroupAssignment.DoesNotExist:
+            return None
+        else:
+            return group.has_treatment
+
+    @property
+    def has_data(self):
+        from storage.models import Activity
+        return Activity.objects.filter(user=self.identification).exists()
+
+    @property
+    def label(self):
+        if self.first_name != "" or self.last_name != "":
+            return "%s %s" % (self.first_name, self.last_name)
+        else:
+            return self.identification
 
     def __str__(self):
         return unicode(self).encode('utf-8')

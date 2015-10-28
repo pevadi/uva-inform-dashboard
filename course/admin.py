@@ -6,7 +6,7 @@ from datetime import date
 from identity import generate_signed_params
 
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ("identification", "dashboard")
+    list_display = ("identification", "label", "treatment", "data", "dashboard")
 
     def dashboard(self, instance):
         link_template = "<a href='/?%s'>%s/%s</a>"
@@ -25,6 +25,17 @@ class StudentAdmin(admin.ModelAdmin):
                 ))
         return ", ".join(links)
     dashboard.allow_tags = True
+
+    def treatment(self, instance):
+        treatment  = instance.has_treatment
+        if treatment is None:
+            return "Undecided"
+        else:
+            return "Treatment" if treatment else "No treatment"
+
+    def data(self, instance):
+        return "Data stored" if instance.has_data else "No data stored"
+
 
 class CourseGroupAdmin(admin.ModelAdmin):
     list_display = ("course", "label", "start_date", "end_date")

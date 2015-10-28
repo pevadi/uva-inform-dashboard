@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+    <head><title>Student import form</title></head>
+    <body>
+    <style>
+        label {
+            display: block;
+            clear: both;
+            font-weight: bold;
+        }
+    </style>
+    <form action="{% url 'add_students' %}" method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Submit" />
+        </form>
+    </body>
+</html>
