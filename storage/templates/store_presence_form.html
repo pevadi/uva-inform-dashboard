@@ -10,6 +10,7 @@
             font-weight: bold;
         }
     </style>
+	<div class="container">
     <h2>Presence for group {{ group.course.title }} - {{ group.label }}</h2>
     <form action="{% url 'storage:store_presence_events' %}?group={{ group.pk }}" method="post">
         {% csrf_token %}
@@ -65,6 +66,7 @@
             </button>
         </div>
         </form>
+	</div>
     <script type='text/javascript' src='https://code.jquery.com/jquery-1.11.3.min.js'></script>
     </body>
 </html>
