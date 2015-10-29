@@ -9,7 +9,7 @@ from storage import XAPIConnector
 def local_import(course, epoch=None):
     objects = []
     for url in course.url_variations:
-        activities += xapi.getAllStatementsByRelatedActitity(url, epoch)
+        activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
         for activity in activities:
             try:
                 activity['context']['contextActivities']\
