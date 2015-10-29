@@ -16,7 +16,7 @@ def local_import(course, epoch=None):
                         ['grouping'][0]['id'] = course.url
             except:
                 pass
-             objects.append(Activity.extract_from_statement(activity))
+            objects.append(Activity.extract_from_statement(activity))
     return objects
 
 def store_event_in_remote_storage(event, user):
