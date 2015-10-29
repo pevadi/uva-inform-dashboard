@@ -7,6 +7,7 @@ from .models import IgnoredUser
 from storage import XAPIConnector
 
 def local_import(course, epoch=None):
+    xapi = XAPIConnector()
     objects = []
     for url in course.url_variations:
         activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
