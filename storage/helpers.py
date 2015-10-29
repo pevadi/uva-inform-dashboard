@@ -6,6 +6,19 @@ from .models import Activity, ActivityType, ActivityVerb
 from .models import IgnoredUser
 from storage import XAPIConnector
 
+def local_import(course, epoch=None):
+    objects = []
+    for url in course.url_variations:
+        activities += xapi.getAllStatementsByRelatedActitity(url, epoch)
+        for activity in activities:
+            try:
+                activity['context']['contextActivities']\
+                        ['grouping'][0]['id'] = course.url
+            except:
+                pass
+             objects.append(Activity.extract_from_statement(activity))
+    return objects
+
 def store_event_in_remote_storage(event, user):
     if not settings.STORE_IN_LRS:
         return None

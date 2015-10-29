@@ -46,6 +46,21 @@ class Course(models.Model):
     active = models.BooleanField(default=True, blank=True)
     last_updated = models.DateTimeField(null=True, blank=True)
 
+    @property
+    def url_variations(self):
+        """Return variations to the url to deal with inconsistencies."""
+        from urlparse import urlsplit, urlunsplit
+        scheme, netloc, path, query, fragment = urlsplit(self.url)
+        scheme2 = 'https' if scheme == "http" else "http"
+        path2 = path[:-1] if path[-1] == "/" else "%s/" % (path,)
+        variations = [
+            (scheme, netloc, path, query, fragment),
+            (scheme, netloc, path2, query, fragment),
+            (scheme2, netloc, path, query, fragment),
+            (scheme2, netloc, path2, query, fragment)
+        ]
+        return [urlunsplit(variation) for variation in variations]
+
     def __str__(self):
         return unicode(self).encode('utf-8')
 
