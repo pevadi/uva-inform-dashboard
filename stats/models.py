@@ -83,7 +83,6 @@ class Variable(PolymorphicModel):
             group = groups[0]
 
             if value_history_item.value is None:
-                print "Skipping", self.name, value_history_item
                 continue
 
             # Determine the attached student
