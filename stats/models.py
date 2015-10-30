@@ -59,9 +59,11 @@ class Variable(PolymorphicModel):
         """
         # Retrieve new activity instances for this variable.
         from storage.models import Activity
-        activities = Activity.objects.filter(
-            course=self.course.url,
-            pk__gt=self.last_consumed_activity_pk)
+        ignored_objects = IgnoredObject.objects.all().value_list('object_id', flat=True)
+        activities = Activity.objects.exclude(
+                activity__in=ignored_objects).filter(
+                        course=self.course.url,
+                        pk__gt=self.last_consumed_activity_pk)
         # Return new ValueHistory instances and the last consumed Activity
         # instance based on the new activities.
         value_history, last_consumed = self.calculate_values_from_activities(
@@ -268,3 +270,14 @@ class ValueHistory(models.Model):
     course_datetime = models.DurationField()
     datetime = models.DateTimeField(auto_now_add=True) # should be relative to epoch
 
+class IgnoredObject(models.Model):
+    object_id = models.CharField(max_length=255)
+
+    def __unicode__(self):
+        return unicode(self.object_id)
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    def __repr__(self):
+        return "IgnoredObject(%s)" % (self,)
