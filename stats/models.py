@@ -82,6 +82,10 @@ class Variable(PolymorphicModel):
                 continue
             group = groups[0]
 
+            if value_history_item.value is None:
+                print "Skipping", self.name, value_history_item
+                continue
+
             # Determine the attached student
             student_id = value_history_item.student
             student, _created = Student.objects.get_or_create(
