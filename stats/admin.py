@@ -25,3 +25,4 @@ class VariableAdmin(PolymorphicParentModelAdmin):
 
 admin.site.register(Variable, VariableAdmin)
 admin.site.register(ValueHistory, ValueHistoryAdmin)
+admin.site.register(IgnoredObject)
