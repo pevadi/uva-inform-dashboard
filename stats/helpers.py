@@ -1,7 +1,7 @@
 from .models import *
 
 def get_students_by_variable_values(variable, lower, upper, bin_index,
-        min_students=5, **filter_kwargs):
+        min_students=10, **filter_kwargs):
     statistics = variable.calculate_statistics_from_values(
             ValueHistory.objects.filter(variable=variable, **filter_kwargs))
 
@@ -16,7 +16,8 @@ def get_students_by_variable_values(variable, lower, upper, bin_index,
     else:
         mean = (lower+upper)/2.0
         return map(lambda x: x['student'],
-                sorted(statistics, key=lambda x: abs(x['value']-mean))[:5])
+                sorted(statistics,
+                    key=lambda x: abs(x['value']-mean))[:min_students])
 
 def get_gauss_params(variable, **filter_kwargs):
     statistics = variable.calculate_statistics_from_values(
