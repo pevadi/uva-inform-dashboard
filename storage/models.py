@@ -39,6 +39,7 @@ class Activity(models.Model):
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     time = models.DateTimeField(null=True)
+    remotely_stored = models.DateTimeField(null=True)
     stored = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -54,12 +55,12 @@ class Activity(models.Model):
             if account['homePage'] == settings.XAPI_ACTOR_HOMEPAGE:
                 user = account['name']
             else:
-                return None
+                return None, None
         else:
-            return None
+            return None, None
 
         if IgnoredUser.objects.filter(user=user).exists():
-            return None
+            return None, None
 
         activity = statement['object']['id']
         verb = statement['verb']['id']
@@ -74,6 +75,7 @@ class Activity(models.Model):
             description = ""
 
         time = dateparser.parse(statement['timestamp'])
+        stored = dateparser.parse(statement['stored'])
 
         value = None
         if 'result' in statement:
@@ -103,12 +105,10 @@ class Activity(models.Model):
             course = None
 
         activity, created = cls.objects.get_or_create(user=user, verb=verb,
-                course=course, activity=activity, time=time, defaults={
-                    "type": statement_type,
-                    "value": value,
-                    "name": name,
-                    "description": description})
-        return activity
+                course=course, activity=activity, time=time,
+                type=statement_type, value=value, name=name,
+                description=description, defaults={"remotely_stored": stored})
+        return activity, created
 
     def __unicode__(self):
         return u' '.join([self.user, self.verb, self.activity,

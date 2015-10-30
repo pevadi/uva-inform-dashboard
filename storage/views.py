@@ -7,31 +7,38 @@ from identity import identity_required
 from .helpers import *
 
 import json
+import gc
 
 def update(request=None, debug_out=None):
     from django.db.models import Max
     from course.models import Course
+    from stats.models import Variable
     from .models import Activity
     from storage import XAPIConnector
     from datetime import datetime
     xapi = XAPIConnector()
-    count = 0
     def debug(msg):
         if debug_out is not None:
             debug_out.write("[%s] %s" % (datetime.now().isoformat(), msg))
 
+    total_count = 0
+    total_skipped = 0
+    skipped_id = []
     debug("Starting update activites.")
     for course in Course.objects.filter(active=True):
         debug("Selected course '%s'" % (course.url, ))
-        res = Activity.objects.filter(course=course.url).aggregate(Max('time'))
-        if res['time__max'] is not None:
-            epoch = res['time__max']
+        res = Activity.objects.filter(course=course.url).aggregate(
+                Max('remotely_stored'))
+        if res['remotely_stored__max'] is not None:
+            epoch = res['remotely_stored__max']
         else:
             res = course.coursegroup_set.aggregate(Max('start_date'))
             epoch = datetime.combine(
                     res['start_date__max'], datetime.min.time())
         debug("Selected epoch %s" % (epoch.isoformat(),))
         for url in course.url_variations:
+            count = 0
+            skipped = 0
             debug("Fetch URL variation '%s'" % (url,))
             activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
             debug("Fetched activities from storage count: %d" % (len(activities),))
@@ -41,23 +48,30 @@ def update(request=None, debug_out=None):
                     ctactivities['grouping'][0]['id'] = course.url
                 except:
                     pass
-                obj = Activity.extract_from_statement(activity)
-                if obj is None:
-                    debug("Skipped activity.")
+                obj, created = Activity.extract_from_statement(activity)
+                if obj is None or not created:
+                    skipped += 1
+                    skipped_id.append(activity)
                 else:
                     count += 1
-        debug("New total fetched activities count: %d" % (count,))
+            del activities
+            debug("(Course url) Created: %d, Skipped: %d" % (count, skipped))
+            total_count += count
+            total_skipped += skipped
+        debug("(Total) Created: %d, Skipped: %d" % (total_count, total_skipped))
+
+    debug("Skipped id's:\n%s" % (
+        [activity['object']['id'] for activity in skipped_id],))
 
     debug("Starting update variables.")
-    for variable in Variable.objects.filter(
-        course__in=Course.objects.filter(active=True)):
+    for variable in Variable.objects.filter(course__in=Course.objects.filter(active=True)):
         debug("Updating variable %s" % (variable.name,))
         variable.update_from_storage()
 
     if request is not None:
         return HttpResponse(count)
     else:
-        debug("Finished, imported %d activities." % (count,))
+        debug("Finished, imported %d activities." % (total_count,))
 
 
 def store_presence_events(request):

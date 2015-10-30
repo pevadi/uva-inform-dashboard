@@ -59,7 +59,8 @@ class Variable(PolymorphicModel):
         """
         # Retrieve new activity instances for this variable.
         from storage.models import Activity
-        ignored_objects = IgnoredObject.objects.all().value_list('object_id', flat=True)
+        ignored_objects = IgnoredObject.objects.all().values_list(
+                'object_id', flat=True)
         activities = Activity.objects.exclude(
                 activity__in=ignored_objects).filter(
                         course=self.course.url,
