@@ -70,18 +70,22 @@ class Variable(PolymorphicModel):
         if last_consumed is None:
             return
 
+        annotated_value_history = []
         for value_history_item in value_history:
-            # Determine the attached student
-            student_id = value_history_item.student
-            student, _created = Student.objects.get_or_create(
-                identification=student_id, defaults={"label": student_id})
             # Determine the attached course groups. Technically someone could
             #  be in multiple groups in one course.
             groups = CourseGroup.get_groups_by_date(
                 value_history_item.datetime.date(),
                 course=self.course)
 
+            if len(groups) == 0:
+                continue
             group = groups[0]
+
+            # Determine the attached student
+            student_id = value_history_item.student
+            student, _created = Student.objects.get_or_create(
+                identification=student_id, defaults={"label": student_id})
 
             group.members.add(student)
             value_history_item.group = group
@@ -91,9 +95,10 @@ class Variable(PolymorphicModel):
                 timezone.make_aware(
                     datetime.combine(group.start_date,
                         datetime.min.time())))
+            annotated_value_history.append(value_history_item)
 
         # Update the database by adding the new ValueHistory instances
-        ValueHistory.objects.bulk_create(value_history)
+        ValueHistory.objects.bulk_create(annotated_value_history)
 
         # Set the last consumed activity
         self.last_consumed_activity_pk = last_consumed.pk
