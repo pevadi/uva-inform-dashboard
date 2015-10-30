@@ -90,7 +90,8 @@ class CourseGroup(models.Model):
             self.start_date, datetime.min.time()))
 
     def __unicode__(self):
-        return unicode(self.label or self.name)
+        return u"(%s - %s)" % (unicode(self.course),
+                unicode(self.label or self.name))
 
     def __str__(self):
         return unicode(self).encode('ascii', 'xmlcharrefreplace')
