@@ -6,7 +6,7 @@ from polymorphic.admin import PolymorphicParentModelAdmin,\
 class ValueHistoryAdmin(admin.ModelAdmin):
     list_display = ('student', 'group', 'variable', 'value', 'course_datetime',
             'datetime')
-    list_filter = ('group__course',)
+    list_filter = ('group',)
 
 class SingleEventVariableAdmin(PolymorphicChildModelAdmin):
     base_model = SingleEventVariable
