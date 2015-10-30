@@ -42,4 +42,5 @@ class CourseGroupAdmin(admin.ModelAdmin):
 
 admin.site.register(Student, StudentAdmin)
 admin.site.register(Course)
+admin.site.register(Assignment)
 admin.site.register(CourseGroup, CourseGroupAdmin)
