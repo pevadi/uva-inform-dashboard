@@ -8,7 +8,7 @@ from .helpers import *
 
 import json
 
-def update(request):
+def update(request=None, debug_out=None):
     from django.db.models import Max
     from course.models import Course
     from .models import Activity
@@ -16,7 +16,13 @@ def update(request):
     from datetime import datetime
     xapi = XAPIConnector()
     count = 0
+    def debug(msg):
+        if debug_out is not None:
+            debug_out.write("[%s] %s" % (datetime.now().isoformat(), msg))
+
+    debug("Starting update activites.")
     for course in Course.objects.filter(active=True):
+        debug("Selected course '%s'" % (course.url, ))
         res = Activity.objects.filter(course=course.url).aggregate(Max('time'))
         if res['time__max'] is not None:
             epoch = res['time__max']
@@ -24,20 +30,34 @@ def update(request):
             res = course.coursegroup_set.aggregate(Max('start_date'))
             epoch = datetime.combine(
                     res['start_date__max'], datetime.min.time())
-        activities = []
+        debug("Selected epoch %s" % (epoch.isoformat(),))
         for url in course.url_variations:
-            activities += xapi.getAllStatementsByRelatedActitity(url, epoch)
+            debug("Fetch URL variation '%s'" % (url,))
+            activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
+            debug("Fetched activities from storage count: %d" % (len(activities),))
             for activity in activities:
                 try:
                     ctactivities = activity['context']['contextActivities']
                     ctactivities['grouping'][0]['id'] = course.url
                 except:
                     pass
-                Activity.extract_from_statement(activity)
-        count += len(activities)
-        for variable in course.variable_set.all():
-            variable.update_from_storage()
-    return HttpResponse(count)
+                obj = Activity.extract_from_statement(activity)
+                if obj is None:
+                    debug("Skipped activity.")
+                else:
+                    count += 1
+        debug("New total fetched activities count: %d" % (count,))
+
+    debug("Starting update variables.")
+    for variable in Variable.objects.filter(
+        course__in=Course.objects.filter(active=True)):
+        debug("Updating variable %s" % (variable.name,))
+        variable.update_from_storage()
+
+    if request is not None:
+        return HttpResponse(count)
+    else:
+        debug("Finished, imported %d activities." % (count,))
 
 
 def store_presence_events(request):
