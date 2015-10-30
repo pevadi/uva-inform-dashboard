@@ -29,4 +29,4 @@ def get_gauss_params(variable, **filter_kwargs):
         variance = sum([(value - mean)**2 for value in values])/len_values
         return {'mean': mean, 'variance': variance}
     else:
-        return None
+        return {}

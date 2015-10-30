@@ -84,7 +84,7 @@ function PiePlotter(container){
 	};
 
 	_this.load_data = function(data){
-		if( data ){
+		if( data && 'mean' in data){
             data = [1-data['mean'], data['mean']];
             var g = chart.selectAll(".arc")
               .data(pie(data))
@@ -205,7 +205,7 @@ function GaussPlotter(container){
 	};
 
 	_this.load_data = function(data){
-		if( data ){
+		if( data && 'mean' in data && 'variance' in data){
 			var mean = data['mean']
 			var variance = data['variance']
 			variance += 0.2;

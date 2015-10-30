@@ -85,9 +85,6 @@ class Variable(PolymorphicModel):
                 continue
             group = groups[0]
 
-            if value_history_item.value is None:
-                continue
-
             # Determine the attached student
             student_id = value_history_item.student
             student, _created = Student.objects.get_or_create(
@@ -187,19 +184,22 @@ class SingleEventVariable(Variable):
         for activity in activities:
             if (self.types.filter(uri=activity.type).exists() and
                     self.verbs.filter(uri=activity.verb).exists()):
-                values.append(ValueHistory(
-                    student=activity.user,
-                    variable=self,
-                    value=activity.value,
-                    datetime=activity.time))
-                last_consumed_activity = activity
+                if self.aggregation == "COUNT":
+                    activity.value = 1
+                if activity.value is not None:
+                    values.append(ValueHistory(
+                        student=activity.user,
+                        variable=self,
+                        value=activity.value,
+                        datetime=activity.time))
+                    last_consumed_activity = activity
         return values, last_consumed_activity
 
     def calculate_statistics_from_values(self, value_history):
         from course.models import CourseGroup
         aggregator = self._get_aggregator()
         statistics = (value_history.values('student','group').
-            annotate(value=models.Avg('value')))
+            annotate(value=aggregator('value')))
         if self.post_processing == "S2M":
             for statistic in statistics:
                 statistic['value'] = statistic['value'] / float(60)
