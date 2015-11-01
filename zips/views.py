@@ -7,6 +7,7 @@ import requests
 import tempfile
 import zipfile
 import shutil
+import os
 
 from identity import identity_required
 
@@ -28,15 +29,22 @@ def get_zip(request):
 
         temp_dir = tempfile.mkdtemp()
         zipfile.ZipFile(temp_file).extractall(path=temp_dir)
+        
+        path = ''
+        for dirpath, dirnames, filenames in os.walk(temp_dir):
+            if 'Makefile' in filenames:
+                path = dirpath
+                break
+        else:
+            return HttpResponseBadRequest()
 
-        log = open(temp_dir+'/logs.sh', 'w')
+        log = open(path+'/logs.sh', 'w')
         loader_template = loader.get_template("compile_log.sh")
         log.write(loader_template.render(
             RequestContext(request, {'pset': filepath})))
         log.flush()
 
-
-        make = open(temp_dir+'/Makefile', 'r')
+        make = open(path+'/Makefile', 'r')
         target_found = False
         makefile_content = []
         for line in make.readlines():
@@ -48,7 +56,7 @@ def get_zip(request):
                 target_found = False
             makefile_content.append(line)
 
-        make = open(temp_dir+'/Makefile', 'w')
+        make = open(path+'/Makefile', 'w')
         make.write("".join(makefile_content))
         make.flush()
 
