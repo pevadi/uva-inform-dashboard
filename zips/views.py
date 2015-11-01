@@ -29,7 +29,7 @@ def get_zip(request):
 
         temp_dir = tempfile.mkdtemp()
         zipfile.ZipFile(temp_file).extractall(path=temp_dir)
-        
+
         path = ''
         for dirpath, dirnames, filenames in os.walk(temp_dir):
             if 'Makefile' in filenames:
