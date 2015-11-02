@@ -15,6 +15,6 @@ urlpatterns = [
         name="store_interacted_event"),
     url(r'^events/code/compile/?$', store_compile_event,
         name="store_compile_event"),
-    url(r'^events/store_grading_event/?$', store_grading_event,
+    url(r'^events/grade/?$', store_grading_event,
         name="store_grading_event"),
 ]
