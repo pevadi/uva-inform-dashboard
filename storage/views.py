@@ -227,7 +227,7 @@ def store_grading_event(request):
         event.set_result(attr, extension=attr_name)
 
         resp = event.store()
-        if resp not is None and resp.status_code != 200:
+        if resp is not None and resp.status_code != 200:
             return HttpResponse(status=resp.status_code)
 
     return HttpResponse(status=204)
