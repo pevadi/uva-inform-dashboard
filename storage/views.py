@@ -102,8 +102,11 @@ def store_presence_events(request):
             if request.POST.get(str(student.pk)) == "on":
                 event = PresenceEvent(student.identification, group.course.url)
                 event.set_object(activity)
-                event.store()
-                count += 1
+                resp = event.store()
+                if resp is None or resp.status_code == 200:
+                    count += 1
+                else:
+                    return HttpResponse(resp.text, status=resp.status_code)
             else:
                 absent.append(student.label)
         return HttpResponse("%d present, absent were: %s" % (count, absent))
