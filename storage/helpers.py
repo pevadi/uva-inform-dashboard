@@ -186,11 +186,25 @@ class XAPIEvent(object):
 
         self._stmnt['verb'] = {"id": verb_id, "display": verb_name}
 
+    def set_result(self, result, extension=None):
+        result_dict = self._stmnt.get('result', {})
+        result_dict["score"] =  {"raw": result}
+        
+        if extension is not None:
+            result_dict["extension"] = 
+                {"http://coach2.innovatievooronderwijs.nl/extensions/gradetype":
+                 extension}
+        
+        self._stmnt['result'] = result_dict
+
     def set_duration(self, duration=None, **kwargs):
         from datetime import timedelta
         from isodate import duration_isoformat
         duration = duration or timedelta(**kwargs)
-        self._stmnt['result'] = {"duration": duration_isoformat(duration)}
+        
+        result_dict = self._stmnt.get('result', {})
+        result_dict["duration"] = duration_isoformat(duration)
+        self.stmnt['result'] = result_dict
 
     def statement(self):
         return self._stmnt
@@ -289,4 +303,16 @@ class PresenceEvent(XAPIEvent):
     def set_object(self, object_id, *args, **kwargs):
         super(PresenceEvent, self).set_object(object_id,
                 "http://adlnet.gov/expapi/activities/meeting", *args, **kwargs)
+
+class GradingEvent(XAPIEvent):
+    
+    def __init__(self, *args, **kwargs):
+        super(GradingEvent, self).__init__(*args, **kwargs)
+        self.set_verb(
+            "http://adlnet.gov/expapi/verbs/scored",
+            verb_name={"en-US": "scored"})
+
+    def set_object(self, object_id, *args, **kwargs):
+        super(GradingEvent, self).set_object(object_id,
+                "http://activitystrea.ms/schema/1.0/application", *args, **kwargs)
 
