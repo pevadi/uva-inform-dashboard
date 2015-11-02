@@ -189,9 +189,9 @@ class SingleEventVariable(Variable):
                     self.verbs.filter(uri=activity.verb).exists()):
                 continue
             if not all(map(lambda x: self_extensions.filter(key=x.key,
-                value=x.value).exists(), result_extensions)):
+                value=x.value).exists(), activity_extensions)):
                 continue
-            if not all(map(lambda x: result_extensions.filter(key=x.key,
+            if not all(map(lambda x: activity_extensions.filter(key=x.key,
                 value=x.value).exists(), self_extensions)):
                 continue
             if self.aggregation == "COUNT":
