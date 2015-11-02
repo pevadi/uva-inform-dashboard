@@ -41,6 +41,8 @@ def update(request=None, debug_out=None):
             skipped = 0
             debug("Fetch URL variation '%s'" % (url,))
             activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
+            if activities is None:
+                continue
             debug("Fetched activities from storage count: %d" % (len(activities),))
             for activity in activities:
                 try:
