@@ -212,23 +212,25 @@ def store_compile_event(request):
 def store_grading_event(request):
     pset = request.POST.get("pset", None)
     if pset is None:
-        return HttpResponseBadRequest()
-    
+        return HttpResponseBadRequest("Expected pset in payload")
+
     attributes = ["scope", "correctness", "design", "style", "grade"]
     for attr_name in attributes:
         if attr_name not in request.POST:
-            return HttpResponseBadRequest()
-    
-    for attr_name in attr_name:
-        event = GradingEvent(request.authenticated_user, 
-            request.authenticated_course)
+            return HttpResponseBadRequest('Expected %s in payload' % (attr_name,))
+
+    for attr_name in attributes:
+        event = GradingEvent(request.authenticated_user,
+                request.authenticated_course)
         event.set_object(pset)
 
-        attr = request.POST.get(attr_name, None)
-        if attr is None:
-            return HttpResponseBadRequest()
-        
-        event.set_result(attr, extension=attr_name)
+        attr = request.POST.get(attr_name)
+        if attr_name == "grade":
+            event.set_result({'min': 1, 'max': 100, 'raw': int(float(attr)*10)},
+                    result_type=attr_name)
+        else:
+            event.set_result({'min': 0, 'max': 50, 'raw': int(float(attr)*10)},
+                    result_type=attr_name)
 
         resp = event.store()
         if resp is not None and resp.status_code != 200:

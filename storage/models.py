@@ -46,6 +46,8 @@ class Activity(models.Model):
     verb = models.URLField(max_length=255)
     activity = models.URLField(max_length=255)
     value = models.FloatField(null=True)  # Progress/score depending on type *
+    value_min = models.FloatField(null=True)
+    value_max = models.FloatField(null=True)
     extensions = models.ManyToManyField('ActivityExtension')
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
@@ -89,6 +91,8 @@ class Activity(models.Model):
         stored = dateparser.parse(statement['stored'])
 
         value = None
+        min_score = None
+        max_score = None
         extensions = []
         if 'result' in statement:
             result = statement['result']
@@ -99,7 +103,7 @@ class Activity(models.Model):
                 if min_score is None or max_score is None:
                     value = raw_score
                 else:
-                    value = 100 * (raw_score - min_score) / max_score
+                    value = 100 * (raw_score - min_score) / float(max_score - min_score)
             elif 'extensions' in result:
                 if PROGRESS_T in result['extensions']:
                     value = 100 * float(result['extensions'][PROGRESS_T])
@@ -124,6 +128,7 @@ class Activity(models.Model):
         activity, created = cls.objects.get_or_create(user=user, verb=verb,
                 course=course, activity=activity, time=time,
                 type=statement_type, value=value, name=name,
+                value_min=min_score, value_max=max_score,
                 description=description, defaults={"remotely_stored": stored})
         for extension in extensions:
             activity.extensions.add(extension)
