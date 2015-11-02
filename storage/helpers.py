@@ -187,23 +187,20 @@ class XAPIEvent(object):
         self._stmnt['verb'] = {"id": verb_id, "display": verb_name}
 
     def set_result(self, result, extension=None):
-        result_dict = self._stmnt.get('result', {})
-        result_dict["score"] =  {"raw": result}
+        self._stmnt['result'] = self._stmnt.get('result', {})
+        self._stmnt['result']["score"] = {"raw": result}
         
         if extension is not None:
-            result_dict["extension"] = {
+            self._stmnt['result']["extension"] = {
                 "http://coach2.innovatievooronderwijs.nl/extensions/gradetype": extension}
-        
-        self._stmnt['result'] = result_dict
 
     def set_duration(self, duration=None, **kwargs):
         from datetime import timedelta
         from isodate import duration_isoformat
         duration = duration or timedelta(**kwargs)
         
-        result_dict = self._stmnt.get('result', {})
-        result_dict["duration"] = duration_isoformat(duration)
-        self.stmnt['result'] = result_dict
+        self._stmnt['result'] = self._stmnt.get('result', {})
+        self._stmnt['result']["duration"] = duration_isoformat(duration)
 
     def statement(self):
         return self._stmnt
