@@ -191,9 +191,8 @@ class XAPIEvent(object):
         result_dict["score"] =  {"raw": result}
         
         if extension is not None:
-            result_dict["extension"] = 
-                {"http://coach2.innovatievooronderwijs.nl/extensions/gradetype":
-                 extension}
+            result_dict["extension"] = {
+                "http://coach2.innovatievooronderwijs.nl/extensions/gradetype": extension}
         
         self._stmnt['result'] = result_dict
 
