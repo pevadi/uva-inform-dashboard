@@ -97,24 +97,23 @@ def store_presence_events(request):
             activity_meeting_type,
             activity_meeting_date])
         count = 0
+        skipped = 0
         absent = []
-        ids = []
         for student in group.members.all():
             if request.POST.get(str(student.pk)) == "on":
                 event = PresenceEvent(student.identification, group.course.url)
                 event.set_object(activity)
                 resp = event.store()
                 if resp is None:
-                    return HttpResponse('IOError occured', status=500)
+                    skipped += 1
                 elif resp.status_code == 200:
                     count += 1
-                    ids.append(resp.json()[0])
                 else:
                     return HttpResponse(resp.text, status=resp.status_code)
             else:
                 absent.append(student.label)
-        return HttpResponse("%d present, absent were: %s\nIDs:%s" % (
-            count, absent, ids))
+        return HttpResponse("%d present, %d skipped, absent were: %s" % (count,
+            skipped, absent))
 
 @csrf_exempt
 @identity_required
