@@ -169,6 +169,7 @@ class SingleEventVariable(Variable):
             choices=AGGREGATION_TYPES, default="AVG")
     types = models.ManyToManyField('storage.ActivityType')
     verbs = models.ManyToManyField('storage.ActivityVerb')
+    extensions = models.ManyToManyField('storage.ActivityExtension')
 
     def _get_aggregator(self):
         return ({
@@ -182,17 +183,26 @@ class SingleEventVariable(Variable):
         last_consumed_activity = None
         values = []
         for activity in activities:
-            if (self.types.filter(uri=activity.type).exists() and
+            activity_extensions = activity.extensions.filter(location='R')
+            self_extensions = self.extensions.filter(location='R')
+            if not (self.types.filter(uri=activity.type).exists() and
                     self.verbs.filter(uri=activity.verb).exists()):
-                if self.aggregation == "COUNT":
-                    activity.value = 1
-                if activity.value is not None:
-                    values.append(ValueHistory(
-                        student=activity.user,
-                        variable=self,
-                        value=activity.value,
-                        datetime=activity.time))
-                    last_consumed_activity = activity
+                continue
+            if not all(map(lambda x: self_extensions.filter(key=x.key,
+                value=x.value).exists(), result_extensions)):
+                continue
+            if not all(map(lambda x: result_extensions.filter(key=x.key,
+                value=x.value).exists(), self_extensions)):
+                continue
+            if self.aggregation == "COUNT":
+                activity.value = 1
+            if activity.value is not None:
+                values.append(ValueHistory(
+                    student=activity.user,
+                    variable=self,
+                    value=activity.value,
+                    datetime=activity.time))
+                last_consumed_activity = activity
         return values, last_consumed_activity
 
     def calculate_statistics_from_values(self, value_history):

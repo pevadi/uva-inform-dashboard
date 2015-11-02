@@ -29,6 +29,16 @@ class ActivityVerb(models.Model):
         return "ActivityVerb(%s)" % (self,)
 
 
+class ActivityExtension(models.Model):
+    EXTENSION_LOCATIONS = (
+        ('R', 'Result extension'),
+    )
+
+    key = models.URLField(max_length=255)
+    value = models.CharField(max_length=255)
+    location = models.CharField(max_length=2, choices=EXTENSION_LOCATIONS,
+            default="R")
+
 class Activity(models.Model):
     user = models.CharField(max_length=255)
     course = models.URLField(max_length=255, blank=True)
@@ -36,6 +46,7 @@ class Activity(models.Model):
     verb = models.URLField(max_length=255)
     activity = models.URLField(max_length=255)
     value = models.FloatField(null=True)  # Progress/score depending on type *
+    extensions = models.ManyToManyField('ActivityExtension')
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     time = models.DateTimeField(null=True)
@@ -78,6 +89,7 @@ class Activity(models.Model):
         stored = dateparser.parse(statement['stored'])
 
         value = None
+        extensions = []
         if 'result' in statement:
             result = statement['result']
             if 'score' in result and 'raw' in result['score']:
@@ -88,8 +100,13 @@ class Activity(models.Model):
                     value = raw_score
                 else:
                     value = 100 * (raw_score - min_score) / max_score
-            elif 'extensions' in result and PROGRESS_T in result:
-                value = 100 * float(result['extensions'][PROGRESS_T])
+            elif 'extensions' in result:
+                if PROGRESS_T in result['extensions']:
+                    value = 100 * float(result['extensions'][PROGRESS_T])
+                for key, value in result['extensions']:
+                    extension, _c = ActivityExtension.objects.get_or_create(
+                            key=key, value=value, location='R')
+                    extensions.append(extension)
             elif 'duration' in result:
                 from isodate import ISO8601Error, parse_duration
                 try:
@@ -108,6 +125,9 @@ class Activity(models.Model):
                 course=course, activity=activity, time=time,
                 type=statement_type, value=value, name=name,
                 description=description, defaults={"remotely_stored": stored})
+        for extension in extensions:
+            activity.extensions.add(extension)
+
         return activity, created
 
     def __unicode__(self):
