@@ -103,7 +103,7 @@ class Activity(models.Model):
                 if min_score is None or max_score is None:
                     value = raw_score
                 else:
-                    value = 100 * (raw_score - min_score) / float(max_score - min_score)
+                    value = (raw_score - min_score) / float(max_score - min_score)
             elif 'extensions' in result:
                 if PROGRESS_T in result['extensions']:
                     value = 100 * float(result['extensions'][PROGRESS_T])
