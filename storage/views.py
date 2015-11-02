@@ -199,3 +199,33 @@ def store_compile_event(request):
         return HttpResponse(status=204)
     else:
         return HttpResponse(status=resp.status_code)
+
+@csrf_exempt
+@identity_required
+def store_grading_event(request):
+    pset = request.POST.get("pset", None)
+    if pset is None:
+        return HttpResponseBadRequest()
+    
+    attributes = ["scope", "correctness", "design", "style", "grade"]
+    for attr_name in attributes:
+        if attr_name not in request.POST:
+            return HttpResponseBadRequest()
+    
+    for attr_name in attr_name:
+        event = GradingEvent(request.authenticated_user, 
+            request.authenticated_course)
+        event.set_object(pset)
+
+        attr = request.POST.get(attr_name, None)
+        if attr is None:
+            return HttpResponseBadRequest()
+        
+        event.set_result(attr, extension=attr_name)
+
+        resp = event.store()
+        if resp not is None and resp.status_code != 200:
+            return HttpResponse(status=resp.status_code)
+
+    return HttpResponse(status=204)
+
