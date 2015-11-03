@@ -106,3 +106,12 @@ class Assignment(models.Model):
     date_available = models.DateTimeField(null=True, blank=True)
     date_due = models.DateTimeField(null=True, blank=True)
     course = models.ForeignKey(Course)
+
+    def __unicode__(self):
+        return unicode(self.title)
+
+    def __str__(self):
+        return unicode(self).encode('ascii', 'xmlcharrefreplace')
+
+    def __repr__(self):
+        return "Assignment(%s)" % (self.title,)
