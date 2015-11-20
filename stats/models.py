@@ -169,7 +169,7 @@ class SingleEventVariable(Variable):
             choices=AGGREGATION_TYPES, default="AVG")
     types = models.ManyToManyField('storage.ActivityType')
     verbs = models.ManyToManyField('storage.ActivityVerb')
-    extensions = models.ManyToManyField('storage.ActivityExtension')
+    extensions = models.ManyToManyField('storage.ActivityExtension', blank=True)
 
     def _get_aggregator(self):
         return ({
