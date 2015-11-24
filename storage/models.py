@@ -39,6 +39,16 @@ class ActivityExtension(models.Model):
     location = models.CharField(max_length=2, choices=EXTENSION_LOCATIONS,
             default="R")
 
+    def __unicode__(self):
+        return u"%s=%s" % (self.key, self.value,)
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    def __repr__(self):
+        return "ActivityExtension(%s)" % (self,)
+
+
 class Activity(models.Model):
     user = models.CharField(max_length=255)
     course = models.URLField(max_length=255, blank=True)
