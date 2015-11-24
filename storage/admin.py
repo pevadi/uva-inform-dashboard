@@ -10,4 +10,5 @@ class ActivityAdmin(admin.ModelAdmin):
 admin.site.register(Activity, ActivityAdmin)
 admin.site.register(ActivityVerb)
 admin.site.register(ActivityType)
+admin.site.register(ActivityExtension)
 admin.site.register(IgnoredUser)
