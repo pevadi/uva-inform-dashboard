@@ -114,14 +114,12 @@ class Activity(models.Model):
                     value = raw_score
                 else:
                     value = (raw_score - min_score) / float(max_score - min_score)
-            elif 'extensions' in result:
-                if PROGRESS_T in result['extensions']:
-                    value = 100 * float(result['extensions'][PROGRESS_T])
-                for key, value in result['extensions']:
+            if 'extensions' in result:
+                for ext_key, ext_value in result['extensions'].items():
                     extension, _c = ActivityExtension.objects.get_or_create(
-                            key=key, value=value, location='R')
+                            key=ext_key, value=ext_value, location='R')
                     extensions.append(extension)
-            elif 'duration' in result:
+            if 'duration' in result:
                 from isodate import ISO8601Error, parse_duration
                 try:
                     duration = parse_duration(statement['result']['duration'])
