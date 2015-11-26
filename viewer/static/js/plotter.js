@@ -43,6 +43,14 @@ function Plotter(container){
 			.addClass("no-data-message")
 			.text(msg));
 	};
+
+	_this.show_loading_message = function(msg){
+		if(msg == undefined) msg = "Resultaten worden geladen...";
+		_this.clear_canvas();
+		$(container).append($("<div>")
+			.addClass("no-data-message")
+			.text(msg));
+	};
 }
 
 function PiePlotter(container){

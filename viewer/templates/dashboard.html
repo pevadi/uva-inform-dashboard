@@ -181,6 +181,7 @@ $(function(){
 		}
 		$("#output_var_selector").empty();
 		$("#output_display_container").hide();
+		input_plot.show_loading_message();
 		var selected = this;
 		d3.json("/stats/"+selected.value+"/", function(error, data) {
 			if( !data || !('bins' in data) ){
