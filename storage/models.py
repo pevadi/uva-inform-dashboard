@@ -133,25 +133,25 @@ class Activity(models.Model):
         else:
             course = None
 
-        for activity in cls.objects.filter(user=user, verb=verb,
+        for act_obj in cls.objects.filter(user=user, verb=verb,
                 course=course, activity=activity, time=time,
                 type=statement_type, value=value, name=name,
                 value_min=min_score, value_max=max_score,
                 description=description):
-            if set(activity.extensions.all()) == set(extensions):
+            if set(act_obj.extensions.all()) == set(extensions):
                 created = False
                 break
         else:
             created = True
-            activity = cls.objects.create(user=user, verb=verb,
+            act_obj = cls.objects.create(user=user, verb=verb,
                     course=course, activity=activity, time=time,
                     type=statement_type, value=value, name=name,
                     value_min=min_score, value_max=max_score,
                     description=description, remotely_stored=stored)
             for extension in extensions:
-                activity.extensions.add(extension)
+                act_obj.extensions.add(extension)
 
-        return activity, created
+        return act_obj, created
 
     def __unicode__(self):
         return u' '.join([self.user, self.verb, self.activity,
