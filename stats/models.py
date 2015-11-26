@@ -182,6 +182,8 @@ class SingleEventVariable(Variable):
     def calculate_values_from_activities(self, activities):
         last_consumed_activity = None
         values = []
+        renormalized_value = (
+            lambda a: ((a.value-a.value_min)/(a.value_max-a.value_min))*10)
         for activity in activities:
             activity_extensions = activity.extensions.filter(location='R')
             self_extensions = self.extensions.filter(location='R')
@@ -196,6 +198,8 @@ class SingleEventVariable(Variable):
                 continue
             if self.aggregation == "COUNT":
                 activity.value = 1
+            if activity.value_max is not None and activity.value_min is not None:
+                activity.value = renormalized_value(activity)
             if activity.value is not None:
                 values.append(ValueHistory(
                     student=activity.user,
