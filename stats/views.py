@@ -42,7 +42,7 @@ def get_variable_stats(request, variable_name):
     # Calculate course-relative time context
     course_datetime_now = group.calculate_course_datetime(timezone.now())
     # Collect relevant value history
-    value_history = ValueHistory.objects.filter(variable=variable, group=group,
+    value_history = ValueHistory.objects.filter(variable=variable,
             course_datetime__lte=course_datetime_now)
     if len(value_history) == 0:
         return JsonResponse([], safe=False)
