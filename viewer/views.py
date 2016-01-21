@@ -10,7 +10,6 @@ from course.models import Course
 
 @xframe_options_exempt
 @identity_required
-@treatment_required
 def render_dashboard(request):
     log_access_event = bool(int(request.GET.get("log_access", "0")))
     course = get_object_or_404(Course, url=request.authenticated_course)
@@ -28,6 +27,4 @@ def render_dashboard(request):
 
 @identity_required
 def has_treatment(request):
-    user = request.authenticated_user
-    return JsonResponse(GroupAssignment.get_or_assign(user).has_treatment,
-            safe=False)
+    return JsonResponse(True, safe=False)
