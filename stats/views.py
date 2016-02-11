@@ -90,8 +90,8 @@ def get_variable_stats(request, variable_name):
         predictions = {}
         for output_variable in Variable.objects.exclude(type='IN').exclude(
                 pk=variable.pk).filter(course=group.course).order_by('order'):
-            comparing_groups = group.course.coursegroup_set.exclude(
-                    pk=group.pk)
+            comparing_groups = CourseGroup.objects.filter(
+                    valuehistory__variable=output_variable).distinct()
             comparing_students = get_students_by_variable_values(
                     variable, lower_points[index], upper_points[index], index,
                     group__in=comparing_groups)

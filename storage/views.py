@@ -226,7 +226,7 @@ def store_grading_event(request):
 
         attr = request.POST.get(attr_name)
         if attr_name == "grade":
-            event.set_result({'min': 1, 'max': 100, 'raw': int(float(attr)*10)},
+            event.set_result({'min': 10, 'max': 100, 'raw': int(float(attr)*10)},
                     result_type=attr_name)
         else:
             event.set_result({'min': 0, 'max': 50, 'raw': int(float(attr)*10)},
