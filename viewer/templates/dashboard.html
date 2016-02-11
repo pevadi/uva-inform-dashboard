@@ -180,7 +180,8 @@ $(function(){
 			log_interaction();
 		}
 		$("#output_var_selector").empty();
-		$("#output_var_selector").hide();
+		$("#output_display_container").hide();
+		input_plot.show_loading_message();
 		var selected = this;
 		d3.json("/stats/"+selected.value+"/", function(error, data) {
 			if( !data || !('bins' in data) ){
@@ -202,7 +203,7 @@ $(function(){
 								.text(d['predictions'][variable]['label']));
 					}
 					if(has_prediction_variables){
-						$("#output_var_selector").show();
+						$("#output_display_container").show();
 						output_variable = $("#output_var_selector").val();
 						if(d['predictions'][output_variable]['chart'] == "GSS"){
 							output_plot = new GaussPlotter("#output_display");
