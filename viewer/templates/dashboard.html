@@ -141,7 +141,7 @@
 </style>
 <div id="display_container">
 	<div id="input_display_container">
-		<h2>Studiegedrag</h2>
+		<h2>Study behaviour</h2>
 		<div class="selector_container">
 			<select id='input_var_selector' class="form-control">
 			{% for variable in input_variables %}<option value="{{ variable.name }}">{{ variable.label }}</option>{% endfor %}
@@ -150,10 +150,10 @@
 		<div id="input_display"></div>
 	</div>
 	<div id="output_display_container">
-		<h2>Verwacht studieresultaat</h2>
+		<h2>Expected result</h2>
 		<div class="selector_container">
 			<select id='output_var_selector' class="form-control">
-				<option value="">Er zijn nog geen studieresultaten beschikbaar</option>
+				<option value="">No study results are available yet.</option>
 			</select>
 		</div>
 		<div id="output_display"></div>
@@ -185,7 +185,7 @@ $(function(){
 		var selected = this;
 		d3.json("/stats/"+selected.value+"/", function(error, data) {
 			if( !data || !('bins' in data) ){
-				input_plot.show_no_data_message("Deze gegevens zijn nog niet binnen gekomen.");
+				input_plot.show_no_data_message("This data has not been received yet.");
 				return; 
 			}
 			var predictions = {};
@@ -215,7 +215,7 @@ $(function(){
 						output_plot.draw();
 					}else{
 						output_plot = new Plotter("#output_display");
-						output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+						output_plot.show_no_data_message("These study results are not available yet");
 					}
 				}
 			});
