@@ -181,7 +181,7 @@ $(function(){
 		$("#output_display_container").hide();
 		input_plot.show_loading_message();
 		var selected = this;
-		d3.json("/stats/"+selected.value+"/", function(error, data) {
+        d3.json("/stats/"+selected.value+"/?day_shift={{ day_shift }}", function(error, data) {
 			if( !data || !('bins' in data) ){
 				input_plot.show_no_data_message("This data has not been received yet.");
 				return; 
@@ -263,9 +263,11 @@ function log_interaction(){
 }
 
 function send_interaction_event(){
+    {% if log_access %}
 	interaction_log_timer = null;
 	var signed_params = "{{ request.signed_url_params_unquoted|safe }}";
 	$.post("//{{ request.get_host }}{% url 'storage:store_interacted_event' %}?"+signed_params);
+    {% endif %}
 }
 </script>
 </html>

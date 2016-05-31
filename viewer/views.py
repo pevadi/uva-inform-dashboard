@@ -21,6 +21,8 @@ def render_dashboard(request):
         ).store()
 
     return render(request, "dashboard.html", {
+        'log_access': log_access_event,
+        'day_shift': request.GET.get('day_shift', '0'),
         'input_variables': course.variable_set.exclude(
             type='OUT').order_by('order')
     });
