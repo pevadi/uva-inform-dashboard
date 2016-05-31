@@ -170,7 +170,7 @@ $(function(){
 	var input_plot = new BarPlotter("#input_display");
 	input_plot.initialize();
 
-	var prediction = {};
+	var prediction = {}, predictions = {};
     $("#input_var_selector").change(function(){
 		if( first_var_select ){
 			first_var_select = false;
@@ -186,7 +186,7 @@ $(function(){
 				input_plot.show_no_data_message("This data has not been received yet.");
 				return; 
 			}
-			var predictions = {};
+			predictions = {};
 
 			for( var i = 0 ; i < data['bins'].length; i++){
 				var d = data['bins'][i];
