@@ -29,7 +29,13 @@ def get_variable_stats(request, variable_name):
     except Student.DoesNotExist:
         return JsonResponse([], safe=False)
 
-    groups = CourseGroup.get_groups_by_date(date.today(),
+    from datetime import timedelta
+    # The day shift parameter allows for admin's to look at the dashboard from
+    # the perspective of a different day. Both negative and positive integers
+    # are allowed to represent the number of days to substract or add.
+    day_shift = timedelta(days=int(request.GET.get('day_shift', '0')))
+
+    groups = CourseGroup.get_groups_by_date(date.today()+day_shift,
             course__url=request.session.get('authenticated_course'),
             members=student)
     if len(groups):
@@ -37,10 +43,9 @@ def get_variable_stats(request, variable_name):
     else:
         return HttpResponseBadRequest("User does not belong to a course group")
 
-    from datetime import timedelta
-
     # Calculate course-relative time context
-    course_datetime_now = group.calculate_course_datetime(timezone.now())
+    course_datetime_now = group.calculate_course_datetime(
+        timezone.now()+day_shift)
     # Collect relevant value history
     value_history = ValueHistory.objects.filter(variable=variable,
             course_datetime__lte=course_datetime_now)
