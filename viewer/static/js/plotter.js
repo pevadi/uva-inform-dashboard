@@ -37,7 +37,15 @@ function Plotter(container){
 	_this.get_axis_label = function(){ return axis_label };
 
 	_this.show_no_data_message = function(msg){
-		if(msg == undefined) msg = "Er zijn nog geen resultaten beschikbaar";
+		if(msg == undefined) msg = "This data has not been received yet.";
+		_this.clear_canvas();
+		$(container).append($("<div>")
+			.addClass("no-data-message")
+			.text(msg));
+	};
+
+	_this.show_loading_message = function(msg){
+		if(msg == undefined) msg = "Loading results...";
 		_this.clear_canvas();
 		$(container).append($("<div>")
 			.addClass("no-data-message")
@@ -113,10 +121,10 @@ function PiePlotter(container){
               .attr("x", 24)
               .attr("y", 9)
               .attr("dy", ".35em")
-              .text(function(d, i) { return (i?"Geslaagd":"Niet geslaagd"); });
+              .text(function(d, i) { return (i?"Passed":"Failed"); });
 
 		}else{
-			_this.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+			_this.show_no_data_message("These study results are not available yet");
 		}
 	};
 }
@@ -216,7 +224,7 @@ function GaussPlotter(container){
 			}
 			curve.transition().attr("d", line(data));
 		}else{
-			_this.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+			_this.show_no_data_message("These study results are not available yet");
 		}
 	}
 }

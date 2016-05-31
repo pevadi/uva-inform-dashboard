@@ -70,6 +70,41 @@ def import_bb_gradecenter_export(export_file, fields=None, verb=None,
     Activity.objects.bulk_create(activities)
     return activities
 
+def import_generic_final_grades_export(export_file, grade_field='grade',
+        course_field='course', student_field='student',date_field='date',
+        date_format="%d-%m-%Y", verb=None, activity_type=None, quoting=None):
+    from csv import DictReader, QUOTE_NONE
+    from datetime import datetime
+    from course.models import Course
+    if quoting is None:
+        reader = DictReader(export_file, delimiter=",", quoting=QUOTE_NONE)
+    else:
+        reader = DictReader(export_file, delimiter=",")
+    verb = verb or "http://activitystrea.ms/schema/1.0/complete"
+    activity_type = (activity_type or
+        "http://adlnet.gov/expapi/activities/course")
+    activities = []
+    for row in reader:
+        try:
+            course = Course.objects.get(url=row[course_field])
+        except Course.DoesNotExist:
+            print "Could not find course `%s`, skipping." % (
+                row[course_field],)
+            continue
+        activities.append(Activity(
+            user=row[student_field],
+            course=course.url,
+            type=activity_type,
+            verb=verb,
+            activity=row[course_field],
+            value=float(row[grade_field]),
+            name=course.title,
+            description=course.title,
+            time=datetime.strptime(row[date_field], date_format)))
+    Activity.objects.bulk_create(activities)
+    return activities
+
+
 class XAPIEvent(object):
     _stmnt = None
     user = None
