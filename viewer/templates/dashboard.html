@@ -188,7 +188,8 @@ $(function(){
 			}
 			var predictions = {};
 
-			data['bins'].forEach(function(d, i){
+			for( var i = 0 ; i < data['bins'].length; i++){
+				var d = data['bins'][i];
 				predictions[""+d['id']] = d['predictions'];
 				if(i == 0){
 					$("#output_var_selector").show();
@@ -216,7 +217,7 @@ $(function(){
 						output_plot.show_no_data_message("These study results are not available yet");
 					}
 				}
-			});
+			}
 
 			input_plot.set_axis_label(data['axis'])
 			input_plot.draw();
