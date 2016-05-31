@@ -9,16 +9,21 @@ class StudentAdmin(admin.ModelAdmin):
     list_display = ("identification", "label", "treatment", "data", "dashboard")
 
     def dashboard(self, instance):
-        link_template = "<a href='/?%s'>%s/%s</a>"
+        link_template = "<a href='/?%s&day_shift=%d'>%s/%s</a>"
         links = []
 
         for group in instance.statistic_groups.all():
             if group.course.active:
+                if date.today() > group.end_date:
+                    day_shift = (group.end_date-date.today()).days
+                else:
+                    day_shift = 0;
                 links.append(link_template % (
                     generate_signed_params(
                         instance.identification,
                         group.course.url
                     ),
+                    day_shift,
                     group.course.title,
                     group.label
                 ))
