@@ -12,8 +12,7 @@ class StudentAdmin(admin.ModelAdmin):
         link_template = "<a href='/?%s'>%s/%s</a>"
         links = []
 
-        for group in instance.statistic_groups.filter(
-                start_date__lte=date.today(), end_date__gte=date.today()):
+        for group in instance.statistic_groups.all():
             if group.course.active:
                 links.append(link_template % (
                     generate_signed_params(
