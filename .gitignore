@@ -10,6 +10,7 @@ db.sqlite3
 
 # Settings
 settings.py
+prod_settings.py.example
 
 # Distribution / packaging
 .Python
