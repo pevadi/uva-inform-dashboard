@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
+import sys, os
+sys.path.insert(0,"../../../home/")
+
+from pepijn import password
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -20,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ''
+SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -125,9 +128,10 @@ from datetime import timedelta
 LRS_TIME_OFFSET = (lambda t: t - timedelta(seconds=30))
 
 LRS = {
-    'username': 'lrs username',
-    'password': 'lrs password',
-    'endpoint': 'lrs endpoint (i.e. .../xAPI/statements)',
+    'username': os.environ['LRS_USERNAME'],
+    'password': os.environ['LRS_PASSWORD'],
+    'endpoint': os.environ['LRS_ENDPOINT'],
 }
 
 XAPI_ACTOR_HOMEPAGE = "https://secure.uva.nl"
+
