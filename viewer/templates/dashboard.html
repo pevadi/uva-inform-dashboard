@@ -2,272 +2,448 @@
 <!DOCTYPE html>
 <html>
 <head><title>UvAInform dashboard</title>
+    <meta http-equiv="cache-control" content="no-cache"> 
+    <meta http-equiv="expires" content="0"> 
+    <meta http-equiv="pragma" content="no-cache">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.7.5/css/bootstrap-select.min.css">
+    <link rel="stylesheet" href="../static/radar-chart.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.7.5/js/bootstrap-select.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+    <script>window.d3 || document.write('<script src="{% static "js/d3.min.js" %}">\x3C/script>')</script> 
+    <script type="text/javascript" src="../static/js/radar-chart.js"></script>
+<script type='text/javascript' src="{% static 'js/radar-chart.js' %}"></script>
+<script type='text/javascript' src="{% static 'js/gaussian.js' %}"></script>
+<script type='text/javascript' src="{% static 'js/plotter.js' %}"></script>
 </head>
 <body>
 <style>
-	#display_container {
-		width: 800px;
-		height: 400px;
-		margin: auto;
-	}
+    #display_container {
+        width: 800px;
+        height: 400px;
+        margin: auto;
+    }
 
-	/* Taken from Bootstrap (http://getbootstrap.com/) */
-	.form-control {
-		display: block;
-		width: 100%;
-		height: 34px;
-		padding: 6px 12px;
-		font-size: 14px;
-		line-height: 1.42857143;
-		color: #555;
-		background-color: #fff;
-		background-image: none;
-		border: 1px solid #ccc;
-		border-radius: 4px;
-		-webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
-		box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
-		-webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
-		-o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
-		transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
-	}
+    /* Taken from Bootstrap (http://getbootstrap.com/) */
+    .form-control {
+        display: block;
+        width: 100%;
+        height: 34px;
+        padding: 6px 12px;
+        font-size: 14px;
+        line-height: 1.42857143;
+        color: #555;
+        background-color: #fff;
+        background-image: none;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+        -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
+        -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+        transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+    }
 
-	#input_display_container, #output_display_container {
-		float: left;
-		width: 50%;
-		height: 305px;
-		font: 10px sans-serif;
-		text-align: center;
-	}
+    #input_display_container, #output_display_container {
+        float: left;
+        width: 50%;
+        height: 305px;
+        font: 10px sans-serif;
+        text-align: center;
+    }
 
-	#input_display, #output_display {
-		width: 100%;
-		height: 250px;
-	}
+    #input_display, #output_display {
+        width: 100%;
+        height: 250px;
+    }
+    .dropdown-menu {
+        opacity: 0.95;
+    }
 
-	.selector_container {
-		padding: 10px;
-	}
+    .selector_container {
+        padding: 10px;
+    }
 
-	.no-data-message {
-		height: 100%;
-		width: 100%;
-		padding: 10px;
-		font-size: 16px;
-		text-align: center;
-		vertical-align: center;
-		background: #E8E8E8;
-		color: #333;
+    .no-data-message {
+        /*height: 100%;*/
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        text-align: center;
+        vertical-align: center;
+        background: #E8E8E8;
+        color: #333;
+    }
 
-	}
+    /** Plotter Stylsheets **/
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
 
-	/** Plotter Stylsheets **/
-	.axis path,
-	.axis line {
-		fill: none;
-		stroke: #000;
-		shape-rendering: crispEdges;
-	}
+    .slider .background {
+        fill: #F9CB9C;
+    }
 
-	.slider .background {
-		fill: #F9CB9C;
-	}
+    .slider .handle {
+      fill: #fff;
+      stroke: #000;
+      stroke-opacity: .5;
+      stroke-width: 1.25px;
+      cursor: ew-resize;
+    }
 
-	.slider .handle {
-	  fill: #fff;
-	  stroke: #000;
-	  stroke-opacity: .5;
-	  stroke-width: 1.25px;
-	  cursor: ew-resize;
-	}
+    .slider .handle:hover,
+    .slider .handle:active{
+        fill: #000;
+        fill-opacity: .5;
+    }
 
-	.slider .handle:hover,
-	.slider .handle:active{
-		fill: #000;
-		fill-opacity: .5;
-	}
+    .x.axis .domain {
+      fill: none;
+      stroke: none;
+    }
 
-	.x.axis .domain {
-	  fill: none;
-	  stroke: none;
-	}
+    .x.axis.lined .domain {
+      stroke: #000;
+    }
 
-	.x.axis.lined .domain {
-	  stroke: #000;
-	}
+    .x.axis .halo {
+      fill: none;
+      stroke: none;
+    }
 
-	.x.axis .halo {
-	  fill: none;
-	  stroke: none;
-	}
+    .line {
+        fill: none;
+        stroke: steelblue;
+        stroke-width: 1.5px;
+    }
 
-	.line {
-		fill: none;
-		stroke: steelblue;
-		stroke-width: 1.5px;
-	}
+    .bargroup rect.bar {
+        fill: #cfe2f3;
+    }
 
-	.bargroup rect.bar {
-		fill: #cfe2f3;
-	}
+    .bargroup.bar-you rect.bar {
+        fill: #03A9F4;
+    }
+    .bargroup:hover rect.bar {
+        fill: #f9cb9c;
+        cursor: pointer;
+    }
+    .bargroup.bar-you:hover{
+        cursor: pointer;
+    }
+    .bargroup.bar-you:hover rect.bar {
+        fill: #FF9800;
+    }
 
-	.bargroup.bar-you rect.bar {
-		fill: #03A9F4;
-	}
-	.bargroup:hover rect.bar {
-		fill: #f9cb9c;
-		cursor: pointer;
-	}
-	.bargroup.bar-you:hover{
-		cursor: pointer;
-	}
-	.bargroup.bar-you:hover rect.bar {
-		fill: #FF9800;
-	}
+    .bargroup.active rect.bar {
+        fill: #f9cb9c;
+        stroke: black;
+        stroke-width: 3px;
+    }
+    .bargroup.active.bar-you rect.bar {
+        fill: #FF9800;
+        stroke: black;
+        stroke-width: 3px;
+    }
 
-	.bargroup.active rect.bar {
-		fill: #f9cb9c;
-		stroke: black;
-		stroke-width: 3px;
-	}
-	.bargroup.active.bar-you rect.bar {
-		fill: #FF9800;
-		stroke: black;
-		stroke-width: 3px;
-	}
+    .arc path {
+          stroke: #fff;
+    }
 
-	.arc path {
-		  stroke: #fff;
-	}
+    .radar-chart .area {
+      fill-opacity: 0.7;
+    }
+    .radar-chart.focus .area {
+      fill-opacity: 0.3;
+    }
+    .radar-chart.focus .area.focused {
+      fill-opacity: 0.9;
+    }
+    .area.germany, .germany .circle {
+      fill: #FFD700;
+      stroke: none;
+    }
+    .area.argentina, .argentina .circle {
+      fill: #ADD8E6;
+      stroke: none;
+    }
+
+    .loader {
+        position: relative;
+        top: 25%;
+        height: 30%;
+        margin: -15% 0 0 -25%;
+        margin: auto;
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        width: 80px;
+        height: 80px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 1.2s linear infinite;
+    }
+
+    @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
 </style>
+
+
 <div id="display_container">
-	<div id="input_display_container">
-		<h2>Studiegedrag</h2>
-		<div class="selector_container">
-			<select id='input_var_selector' class="form-control">
-			{% for variable in input_variables %}<option value="{{ variable.name }}">{{ variable.label }}</option>{% endfor %}
-			</select>
-		</div>
-		<div id="input_display"></div>
-	</div>
-	<div id="output_display_container">
-		<h2>Verwacht studieresultaat</h2>
-		<div class="selector_container">
-			<select id='output_var_selector' class="form-control">
-				<option value="">Er zijn nog geen studieresultaten beschikbaar</option>
-			</select>
-		</div>
-		<div id="output_display"></div>
-	</div>
+    <div id="input_display_container">
+        <h2>Studiegedrag</h2>
+        <div class="selector_container">
+            <select data-width='350px' id='input_var_selector', class="selectpicker" multiple>
+            {% for variable in input_variables %}<option value="{{ variable.name }}" selected="selected">{{ variable.label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div id="input_display"></div>
+    </div>
+    <div id="output_display_container">
+        <h2>Verwacht studieresultaat</h2>
+        <div class="selector_container">
+            <select data-width='350px' id='output_var_selector' class="selectpicker">
+                <option value="final_grade" selected="selected">Final Grade</option>
+            </select>
+        </div>
+        <div id="output_display"></div>
+    </div>
 </div>
+<!--
 <script type='text/javascript' src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 <script>window.jQuery || document.write('<script src="{% static "js/jquery-1.11.3.min.js" %}">\x3C/script>')</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-<script>window.d3 || document.write('<script src="{% static "js/d3.min.js" %}">\x3C/script>')</script>
+<script>window.d3 || document.write('<script src="{% static "js/d3.min.js" %}">\x3C/script>')</script> 
 <script type='text/javascript' src="{% static 'js/gaussian.js' %}"></script>
 <script type='text/javascript' src="{% static 'js/plotter.js' %}"></script>
+<script type='text/javascript' src="{% static 'js/radar-chart.js' %}"></script> -->
+
+
 <script>
-	var output_plot;
+var output_plot;
 $(function(){
-	var first_var_select = true, first_bin_select = true;
-	var input_plot = new BarPlotter("#input_display");
-	input_plot.initialize();
 
-	var prediction = {};
+    var first_var_select = true, first_bin_select = true;
+
+    var prediction = {}, predictions = {};
     $("#input_var_selector").change(function(){
-		if( first_var_select ){
-			first_var_select = false;
-		}else{
-			log_interaction();
-		}
-		$("#output_var_selector").empty();
-		$("#output_display_container").hide();
-		input_plot.show_loading_message();
-		var selected = this;
-		d3.json("/stats/"+selected.value+"/", function(error, data) {
-			if( !data || !('bins' in data) ){
-				input_plot.show_no_data_message("Deze gegevens zijn nog niet binnen gekomen.");
-				return; 
-			}
-			var predictions = {};
+        // Obtain all selected values
+        var targets = "";
+        var num_vars_selected = 0;
+        $.each($("#input_var_selector option:selected"), function(){
+            targets = targets + ";" + $(this).val();
+            num_vars_selected++;
+        });
+        console.log('Selected', targets)
+        console.log('nr', num_vars_selected)
+        
+        
+        
+        // Initialize visual area
+        if(num_vars_selected <= 1){
+            var input_plot = new BarPlotter("#input_display");
+        } else if(num_vars_selected>1){
+            var input_plot = new RadarPlotter("#input_display");
+        }
 
-			data['bins'].forEach(function(d, i){
-				predictions[""+d['id']] = d['predictions'];
-				if(i == 0){
-					$("#output_var_selector").show();
-					var has_prediction_variables = false;
-					for(variable in d['predictions']){
-						has_prediction_variables = true;
-						$("#output_var_selector").append(
-							$("<option>")
-								.attr('value', variable)
-								.text(d['predictions'][variable]['label']));
-					}
-					if(has_prediction_variables){
-						$("#output_display_container").show();
-						output_variable = $("#output_var_selector").val();
-						if(d['predictions'][output_variable]['chart'] == "GSS"){
-							output_plot = new GaussPlotter("#output_display");
-						}else{
-							output_plot = new PiePlotter("#output_display");
-						}
-						output_plot.initialize();
-						output_plot.set_axis_label(d['predictions'][output_variable]['axis']);
-						output_plot.draw();
-					}else{
-						output_plot = new Plotter("#output_display");
-						output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
-					}
-				}
-			});
+        input_plot.initialize();
+        
 
-			input_plot.set_axis_label(data['axis'])
-			input_plot.draw();
-			input_plot.on("select-bin", function(bin){
-				if( first_bin_select ){
-					first_bin_select = false;
-				}else{
-					log_interaction();
-				}
-				prediction = predictions[bin]
-				output_variable = $("#output_var_selector").val()
-				if(output_variable){
-					output_plot.draw();
-					output_plot.load_data(prediction[output_variable]);
-				}
-			});
-			input_plot.load_data(data);
-		});
+        if( first_var_select ){
+            first_var_select = false;
+        }else{
+            log_interaction();
+        }
+
+        $("#output_display_container").hide();
+        
+        if(num_vars_selected > 0){
+            console.log('Selected something');
+            input_plot.show_loading_message();
+        }else{
+            console.log('selected nothing');
+            input_plot.show_no_data_message();
+        }
+        //var selected = this;
+
+
+
+
+        if(num_vars_selected == 1){
+            d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}, function(error, data) {
+                console.log("Received json response");
+                console.log(targets);
+                if( !data || !('bins' in data) ){
+                    if(data && 'no_data' in data){
+                        var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
+                        input_plot.show_no_data_message(msg+data["no_data"]);
+                    } else {
+                        input_plot.show_no_data_message("No data available.");
+                    }
+                    return; 
+                }
+                predictions = {};
+
+                for( var i = 0 ; i < data['bins'].length; i++){
+                    var d = data['bins'][i];
+                    predictions[""+d['id']] = d['predictions'];
+                    if(i == 0){
+                        $("#output_var_selector").show();
+                        var has_prediction_variables = false;
+                        for(variable in d['predictions']){
+                            has_prediction_variables = true;
+                            console.log('var below')
+                            console.log(variable)
+                            $("#output_var_selector").append(
+                                $("<option>")
+                                    .attr('value', variable)
+                                    .text(d['predictions'][variable]['label']));
+                        }
+                        if(has_prediction_variables){
+                            console.log("Has prediction variables")
+                            $("#output_display_container").show();
+                            output_variable = $("#output_var_selector").val();
+                            if(d['predictions'][output_variable]['chart'] == "GSS"){
+                                output_plot = new GaussPlotter("#output_display");
+                            }else{
+                                output_plot = new PiePlotter("#output_display");
+                            }
+                            output_plot.initialize();
+                            output_plot.set_axis_label(d['predictions'][output_variable]['axis']);
+                            output_plot.draw();
+                        }else{
+                            console.log("Does not have prediction variables")
+                            output_plot = new Plotter("#output_display");
+                            output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+                        }
+                    }
+                }
+
+                input_plot.set_axis_label(data['axis'])
+                input_plot.draw();
+                input_plot.on("select-bin", function(bin){
+                    if( first_bin_select ){
+                        first_bin_select = false;
+                    }else{
+                        log_interaction();
+                    }
+                    prediction = predictions[bin]
+                    output_variable = $("#output_var_selector").val()
+                    if(output_variable){
+                        output_plot.draw();
+                        output_plot.load_data(prediction[output_variable]);
+                    }
+                });
+                input_plot.load_data(data);
+            });
+        }
+        else if(num_vars_selected >1){
+            console.log("in elif");
+            console.log(targets);
+            console.log({{ day_shift }});
+
+            d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}, function(error, data) {
+                console.log("received json response mul");
+                if( !data || !('prediction' in data) ){
+                    console.log("ohno1");
+                    if(data && 'no_data' in data){
+                        var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
+                        input_plot.show_no_data_message(msg+(data["no_data"].join(', ')));
+                        console.log("ohno2");
+                    } else {
+                        console.log("ohno3");
+                        input_plot.show_no_data_message("No data available.");
+                    }
+                    return; 
+                }
+                console.log("RADAR")
+                input_plot.draw();
+                input_plot.load_data(data);
+
+
+                prediction = data['prediction']
+
+                $("#output_var_selector").show();
+                var has_prediction_variables = false;
+                for(out_variable in prediction){
+                    console.log(out_variable);
+                    has_prediction_variables = true;
+                    $("#output_var_selector").append(
+                        $("<option>")
+                            .attr('value', out_variable)
+                            .text(prediction[out_variable]['label']));
+                }
+
+
+                if(has_prediction_variables){
+                    $("#output_display_container").show();
+                    output_variable = $("#output_var_selector").val();
+                    if(prediction[output_variable]['chart'] == "GSS"){
+                        output_plot = new GaussPlotter("#output_display");
+                    }else{
+                        output_plot = new PiePlotter("#output_display");
+                    }
+                    output_plot.initialize();
+                    output_plot.set_axis_label(prediction[output_variable]['axis']);
+                    output_plot.draw();
+                    output_plot.load_data(prediction[output_variable]);
+                }else{
+                    console.log("Does not have prediction variables")
+                    output_plot = new Plotter("#output_display");
+                    output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+                }
+
+            });
+        }
+
+
+
 
     });
-	$("#output_var_selector").change(function(){
-		if($(this).val()){
-			output_variable = $(this).val()
-			if(prediction[output_variable]['chart'] == "GSS"){
-				output_plot = new GaussPlotter("#output_display");
-			}else{
-				output_plot = new PiePlotter("#output_display");
-			}
-			output_plot.initialize();
-			output_plot.set_axis_label(prediction[output_variable]['axis']);
-			output_plot.draw();
-			output_plot.load_data(prediction[output_variable]);
-		}
-	});
+    $("#output_var_selector").change(function(){
+        if($(this).val()){
+            output_variable = $(this).val()
+            if(prediction[output_variable]['chart'] == "GSS"){
+                output_plot = new GaussPlotter("#output_display");
+            }else{
+                output_plot = new PiePlotter("#output_display");
+            }
+            output_plot.initialize();
+            output_plot.set_axis_label(prediction[output_variable]['axis']);
+            output_plot.draw();
+            output_plot.load_data(prediction[output_variable]);
+        }
+    });
 
     $("#input_var_selector").change();
-	$("#output_var_selector").change();
+    $("#output_var_selector").change();
 });
 
 var interaction_log_timer;
 function log_interaction(){
-	if(interaction_log_timer) clearTimeout(interaction_log_timer)
-	interaction_log_timer = setTimeout(send_interaction_event, 1000)
+    if(interaction_log_timer) clearTimeout(interaction_log_timer)
+    interaction_log_timer = setTimeout(send_interaction_event, 1000)
 }
 
 function send_interaction_event(){
-	interaction_log_timer = null;
-	var signed_params = "{{ request.signed_url_params_unquoted|safe }}";
-	$.post("//{{ request.get_host }}{% url 'storage:store_interacted_event' %}?"+signed_params);
+    {% if log_access %}
+        interaction_log_timer = null;
+        var signed_params = "{{ request.signed_url_params_unquoted|safe }}";
+        $.post("//{{ request.get_host }}{% url 'storage:store_interacted_event' %}?"+signed_params);
+    {% endif %}
 }
 </script>
 </html>

@@ -28,7 +28,6 @@ class GroupAssignment(models.Model):
                     last_group = random.choice(choices)
                 choices.remove(last_group)
                 group = choices[0]
-
             return cls.objects.create(student=student, group=group)
         # Case 2: Existing user
         else:
