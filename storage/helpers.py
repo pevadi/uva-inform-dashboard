@@ -93,7 +93,7 @@ def import_generic_final_grades_export(export_file, grade_field='grade',
             continue
         activities.append(Activity(
             user=row[student_field],
-            course=course,
+            course=course.url,
             type=activity_type,
             verb=verb,
             activity=row[course_field],

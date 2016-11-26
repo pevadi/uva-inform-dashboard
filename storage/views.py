@@ -9,8 +9,32 @@ from .helpers import *
 import json
 import gc
 
-def update(request=None, debug_out=None):
-    from django.db.models import Max
+# Removes all data of the ignored users from local database. Also sets all users to no dashboard.
+# The coursegroup is fixed to 3, this is because this function should not be needed anymore in
+# new episodes because of a bugfix. 
+def remove_ignored_user_data(request=None, debug_out=None):
+    from .models import IgnoredUser
+    from stats.models import ValueHistory
+    from viewer.models import GroupAssignment
+    ignored_user_ids = [x.user for x in IgnoredUser.objects.all()]
+    for user_id in ignored_user_ids:
+        # Delete valuahistory from local db
+        ValueHistory.objects.filter(student=user_id, group=3).delete()
+        # Set treatment to NO DASHBOARD
+        if GroupAssignment.objects.filter(student=user_id):
+            tmp = GroupAssignment.objects.get(student=user_id)
+            tmp.group = 'B'
+            tmp.save()
+
+# Removes all NONE values from LRS (cleaning func) 10 is the PK for scored school-assignment.
+def remove_none_values_scores(request=None, debug_out=None):
+    from storage.models import Activity
+    Activity.objects.filter(verb="http://adlnet.gov/expapi/verbs/scored", type="http://id.tincanapi.com/activitytype/school-assignment", value=None).delete()
+
+
+# This function get ALL data from the LRS, yes, ALL data.
+def update_all(request=None, debug_out=None):
+    from django.db.models import Max, Min
     from course.models import Course
     from stats.models import Variable
     from .models import Activity
@@ -24,9 +48,75 @@ def update(request=None, debug_out=None):
     total_count = 0
     total_skipped = 0
     skipped_id = []
-    debug("Starting update activites.")
+    debug("Starting update activites. :)")
     for course in Course.objects.filter(active=True):
         debug("Selected course '%s'" % (course.url, ))
+        ########### Load all data of all course groups ###########
+        res = course.coursegroup_set.aggregate(Min('start_date'))
+        epoch = datetime.combine(
+                res['start_date__min'], datetime.min.time())
+        ##########################################################
+        debug("Selected epoch %s" % (epoch.isoformat(),))
+        for url in course.url_variations:
+            count = 0
+            skipped = 0
+            debug("Fetch URL variation '%s'" % (url,))
+            activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
+            print 'n# of activities', len(activities)
+            if activities is None:
+                continue
+            debug("Fetched activities from storage count: %d" % (len(activities),))
+            for activity in activities:
+                try:
+                    ctactivities = activity['context']['contextActivities']
+                    ctactivities['grouping'][0]['id'] = course.url
+                except:
+                    pass
+                obj, created = Activity.extract_from_statement(activity)
+                if obj is None or not created:
+                    skipped += 1
+                    skipped_id.append(activity)
+                else:
+                    count += 1
+            del activities
+            debug("(Course url) Created: %d, Skipped: %d" % (count, skipped))
+            total_count += count
+            total_skipped += skipped
+        debug("(Total) Created: %d, Skipped: %d" % (total_count, total_skipped))
+
+    debug("Skipped id's:\n%s" % (
+        [activity['object']['id'] for activity in skipped_id],))
+
+    debug("Starting update variables.")
+    for variable in Variable.objects.filter(course__in=Course.objects.filter(active=True)):
+        debug("Updating variable %s" % (variable.name,))
+        variable.update_from_storage()
+
+    if request is not None:
+        return HttpResponse(count)
+    else:
+        debug("Finished, imported %d activities." % (total_count,))
+
+# This functions gets the newest data from the LRS (very, very similar to the function above)
+def update(request=None, debug_out=None):
+    from django.db.models import Max, Min
+    from course.models import Course
+    from stats.models import Variable
+    from .models import Activity
+    from storage import XAPIConnector
+    from datetime import datetime
+    xapi = XAPIConnector()
+    def debug(msg):
+        if debug_out is not None:
+            debug_out.write("[%s] %s" % (datetime.now().isoformat(), msg))
+
+    total_count = 0
+    total_skipped = 0
+    skipped_id = []
+    debug("Starting update activites. :)")
+    for course in Course.objects.filter(active=True):
+        debug("Selected course '%s'" % (course.url, ))
+        ########### Load only new data (based on last stored) ###########
         res = Activity.objects.filter(course=course.url).aggregate(
                 Max('remotely_stored'))
         if res['remotely_stored__max'] is not None:
@@ -35,12 +125,15 @@ def update(request=None, debug_out=None):
             res = course.coursegroup_set.aggregate(Max('start_date'))
             epoch = datetime.combine(
                     res['start_date__max'], datetime.min.time())
+            
+        ##########################################################
         debug("Selected epoch %s" % (epoch.isoformat(),))
         for url in course.url_variations:
             count = 0
             skipped = 0
             debug("Fetch URL variation '%s'" % (url,))
             activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
+            print 'n# of activities', len(activities)
             if activities is None:
                 continue
             debug("Fetched activities from storage count: %d" % (len(activities),))
