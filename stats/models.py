@@ -85,7 +85,7 @@ class Variable(PolymorphicModel):
                 continue
             group = groups[0]
 
-            # Determine the attached student
+            # Determine the attached student and create if not existent
             student_id = value_history_item.student
             student, _created = Student.objects.get_or_create(
                 identification=student_id, defaults={"label": student_id})
@@ -180,6 +180,10 @@ class SingleEventVariable(Variable):
             "MIN": models.Min})[self.aggregation]
 
     def calculate_values_from_activities(self, activities):
+        # print 'aggregation', self.aggregation
+        # print 'types', self.types.all()
+        # print 'verbs', self.verbs.all()
+        # print 'extensions', self.extensions.all()
         last_consumed_activity = None
         values = []
         renormalized_value = (
@@ -187,17 +191,23 @@ class SingleEventVariable(Variable):
         for activity in activities:
             activity_extensions = activity.extensions.filter(location='R')
             self_extensions = self.extensions.filter(location='R')
+            # Check if the activity is relevant 
             if not (self.types.filter(uri=activity.type).exists() and
                     self.verbs.filter(uri=activity.verb).exists()):
                 continue
+            # Extensions had something to do with multiple types of grades (i think unrelevant for now)
             if not all(map(lambda x: self_extensions.filter(key=x.key,
                 value=x.value).exists(), activity_extensions)):
+                print 'Extensions are making things difficult 1'
                 continue
             if not all(map(lambda x: activity_extensions.filter(key=x.key,
                 value=x.value).exists(), self_extensions)):
+                print 'Extensions are making things difficult 2'
                 continue
+            # Set value to 1 in order to be able to count
             if self.aggregation == "COUNT":
                 activity.value = 1
+            # In case of different grade scales the value is normalized
             if activity.value_max is not None and activity.value_min is not None:
                 activity.value = renormalized_value(activity)
             if activity.value is not None:
@@ -223,6 +233,7 @@ class SingleEventVariable(Variable):
         elif self.post_processing == "5.5":
             for statistic in statistics:
                 statistic['value'] = int(statistic['value'] >= 5.5)
+
         return statistics
 
 
@@ -278,10 +289,10 @@ class AssignmentLinkedVariable(SingleEventVariable):
 
 class ValueHistory(models.Model):
     """Model containing all calculated raw values for each variable"""
-    student = models.CharField(max_length=255)
+    student = models.CharField(max_length=255, db_index=True)
     group = models.ForeignKey('course.CourseGroup')
     variable = models.ForeignKey('Variable', related_name="+")
-    value = models.FloatField()
+    value = models.FloatField(db_index=True)
     course_datetime = models.DurationField()
     datetime = models.DateTimeField(auto_now_add=True) # should be relative to epoch
 
