@@ -10,6 +10,7 @@ db.sqlite3
 
 # Settings
 settings.py
+settings.*
 
 # Distribution / packaging
 .Python
