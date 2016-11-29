@@ -17,89 +17,90 @@ def evaluate_variables(request=None, debug_out=None):
     import csv
     import sys
     np.set_printoptions(threshold=sys.maxint)
+    from storage.models import Activity
+    from course.models import Assignment
+    from django.core.exceptions import ObjectDoesNotExist
 
     # Retrieve all existing variable keys and groups
-    variable_keys =  ValueHistory.objects.order_by('variable').values('variable').distinct()
-    groups = ValueHistory.objects.order_by('group').values('group').distinct()
+    group = 3
+    variable_keys =  ValueHistory.objects.filter(group=group).order_by('variable').values('variable').distinct()
+    print variable_keys
+    variables = []
+    for x in xrange(len(variable_keys)):
+        variables.append(get_object_or_404(Variable, pk=variable_keys[x]['variable']))
 
-    # Loop over all groups (1415, 1516, 1617)
-    for group in groups:
+    print 'var keys', variable_keys, variables
 
-        # For each group try to retrieve the final grades from an external file
-        try:
-            with open('iki_grades_'+str(group)+'.csv', mode='r') as infile:
-                reader = csv.reader(infile)
-                iki_grades = {rows[0]:rows[1] for rows in reader}
-        except IOError:
-            iki_grades = {}
+    # For each group try to retrieve the final grades from an external file
+    try:
+        with open('iki_grades_'+str(group)+'.csv', mode='r') as infile:
+            reader = csv.reader(infile)
+            iki_grades = {rows[0]:rows[1] for rows in reader}
+    except IOError:
+        iki_grades = {}       
 
-        student_ids =  ValueHistory.objects.filter(group=group['group']).order_by('student').values('student').distinct()
-        
-        # initialize data matrix
-        data_matrix = [['variable-update / student_id']+[d['student'] for d in student_ids]]
-       
-        # Loop over all variables
-        for variable_key in variable_keys:
-            final_grades = ['final_grades']
-            variable_name = None
-            # First get all timestamps and grades
-            time_stamps = []
-            for student_id in student_ids:
-                value_history = ValueHistory.objects.filter(variable=variable_key['variable'], group=group['group'], student=student_id['student'])
-                if value_history:
-                    if variable_name is None:
-                        variable_name = value_history[0].variable
-                    for value_history_item in value_history:
-                        time_stamps.append(value_history_item.course_datetime)
-                # Add final grades from external file (if present)
+    student_ids =  ValueHistory.objects.filter(group=group).order_by('student').values('student').distinct()
+    # initialize data matrix
+    data_matrix = [['variable / student_id']+[d['student'] for d in student_ids]]
+    # Loop over all variables
+    for variable in variables:
+        data_matrix[0] = ['variable / student_id']
+        print 'var', variable
+        variable_name = variable.name
+        final_grades = ['final_grades']
+
+        data_matrix.append([variable_name])
+        # First get all timestamps and grades
+        for student_id in student_ids:
+            value_history = ValueHistory.objects.filter(variable=variable, student=student_id['student'], group=group)
+            # Get the already obtained grades from the activity db
+            assignments = Assignment.objects.all()
+            total_weight = float(0)
+            grade_so_far = 0    
+            for assignment in assignments:
+                # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.)
                 try:
-                    final_grades.append(iki_grades[student_id['student']])
-                except KeyError:
-                    final_grades.append(None)
-
-            time_stamps = list(set(time_stamps))
-
-            # Do the same loop but now we now all timestamps!
-            # For each student we check if a value exists for each possible time stamp. 
-            tmp_stamp = timedelta(seconds=1)
-            for time_stamp in sorted(time_stamps):  
-                value_list_tmp = [str(time_stamp).replace(",", "")+" "+str(variable_name)]
-                for student_id in student_ids:
-                    value_history = ValueHistory.objects.filter(variable=variable_key['variable'], group=group['group'], student=student_id['student'], course_datetime=time_stamp)
-                    if value_history:
-                        value_list_tmp.append(value_history[0].value)
-                    else:
-                        value_list_tmp.append(None)
-
-                # Check if last timestamp was very close to current. In that case merge the values
-                if (time_stamp - tmp_stamp) <= timedelta(hours=12):
-                    data_matrix[-1] = merge_incomplete_lists(data_matrix[-1], value_list_tmp)
+                    assignment_activity =  Activity.objects.filter(user=student_id['student'], activity=assignment.url).latest('value')
+                    if assignment_activity.value > 0:
+                        total_weight += assignment.weight
+                        grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
+                except ObjectDoesNotExist:
+                    continue
+            if total_weight > 0:
+                data_matrix[0].append(student_id)
+                final_grades.append(grade_so_far/total_weight)
+                if value_history:
+                    stats = variable.calculate_statistics_from_values(value_history)
+                    data_matrix[-1].append(stats[0]['value'])
+                    print student_id['student'], total_weight, grade_so_far, grade_so_far/total_weight, stats[0]['value']  
                 else:
-                    data_matrix.append(value_list_tmp)
+                    data_matrix[-1].append(None)
 
-                tmp_stamp = time_stamp
+        print data_matrix
+        print len(data_matrix[-1])
 
-        # Calculate correlation between current variable-updatemoment and final grade outcome
-        # Check if any grades available
-        if len(list(set(final_grades[1:]))) > 1:
-            for x in xrange(1,len(data_matrix)):
-                # Due to the missing values np.ma.corrcoef is to be used. This required some preposcessing of the arrays
-                a = np.ma.array(np.array(final_grades[1:], dtype=np.float), mask=np.isnan(np.array(final_grades[1:], dtype=np.float)))
-                b = np.ma.array(np.array(data_matrix[x][1:], dtype=np.float), mask=np.isnan(np.array(data_matrix[x][1:], dtype=np.float)))
-                data_matrix[x].append(np.ma.corrcoef(a,b)[0][1])
-                data_matrix[x].append(np.var(b))
+    
+    # Calculate correlation between current variable-updatemoment and final grade outcome
+    # Check if any grades available
+    if len(list(set(final_grades[1:]))) > 1:
+        for x in xrange(1,len(data_matrix)):
+            # Due to the missing values np.ma.corrcoef is to be used. This required some preposcessing of the arrays
+            a = np.ma.array(np.array(final_grades[1:], dtype=np.float), mask=np.isnan(np.array(final_grades[1:], dtype=np.float)))
+            b = np.ma.array(np.array(data_matrix[x][1:], dtype=np.float), mask=np.isnan(np.array(data_matrix[x][1:], dtype=np.float)))
+            data_matrix[x].append(np.ma.corrcoef(a,b)[0][1])
+            data_matrix[x].append(np.var(b))
 
 
-        # Finally add the grades
-        data_matrix.append(final_grades)
+    # Finally add the grades
+    data_matrix.append(final_grades)
 
-        # Add some clearifying column titles
-        data_matrix[0].append('Correlation')
-        data_matrix[0].append('Variance')
-        
-        csv_ready_data_matrix =  map(str,data_matrix)
+    # Add some clearifying column titles
+    data_matrix[0].append('Correlation')
+    data_matrix[0].append('Variance')
+    
+    csv_ready_data_matrix =  map(str,data_matrix)
 
-        np.savetxt(str(group)+"_data_matrix.csv", csv_ready_data_matrix, delimiter=",", fmt='%s')
+    np.savetxt(str(group)+"_data_matrix.csv", csv_ready_data_matrix, delimiter=",", fmt='%s')
 
 
 # This function is designed to detect new variables that can be extracted from the already stored activities in 
@@ -116,8 +117,8 @@ def evaluate_activities(request=None, debug_out=None):
     # result_matrix_by_week = [['Verb','object', 'before','week 1', 'week 2', 'week 3', 'week 4', 'week 5', 'week 6', 'week 7', 'week 8', 'all time']]
 
     # 2014
-    episode = '2014'
-    group = "{'group': 2}"
+    episode = '2016'
+    group = "{'group': 3}"
     # Cummalative
     # time_ranges = [["2014-10-01", "2014-10-27"],["2014-10-01", "2014-11-03"],["2014-10-01", "2014-11-10"], ["2014-10-01", "2014-11-17"],["2014-10-01", "2014-11-24"],["2014-10-01", "2014-12-01"],["2014-10-01", "2014-12-08"],["2014-10-01", "2014-12-15"],["2014-10-01", "2014-12-22"]]
     # Per week
@@ -534,8 +535,9 @@ def get_variable_stats(request, variable_names):
         try:
             assignment_activity =  Activity.objects.filter(user=student.identification, activity=assignment.url).latest('value')
             print assignment, assignment_activity.value, assignment.max_grade, assignment.weight
-            total_weight += assignment.weight
-            grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
+            if assignment_activity.value != None:
+                total_weight += assignment.weight
+                grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
         except ObjectDoesNotExist:
             continue
     print total_weight, grade_so_far
