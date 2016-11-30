@@ -222,21 +222,12 @@
         <div id="output_display"></div>
     </div>
 </div>
-<!--
-<script type='text/javascript' src="//code.jquery.com/jquery-1.11.3.min.js"></script>
-<script>window.jQuery || document.write('<script src="{% static "js/jquery-1.11.3.min.js" %}">\x3C/script>')</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-<script>window.d3 || document.write('<script src="{% static "js/d3.min.js" %}">\x3C/script>')</script> 
-<script type='text/javascript' src="{% static 'js/gaussian.js' %}"></script>
-<script type='text/javascript' src="{% static 'js/plotter.js' %}"></script>
-<script type='text/javascript' src="{% static 'js/radar-chart.js' %}"></script> -->
-
 
 <script>
 var output_plot;
 $(function(){
 
-    var first_var_select = true, first_bin_select = true;
+    var first_bin_select = true;
 
     var prediction = {}, predictions = {};
     $("#input_var_selector").change(function(){
@@ -247,8 +238,6 @@ $(function(){
             targets = targets + ";" + $(this).val();
             num_vars_selected++;
         });
-        console.log('Selected', targets)
-        console.log('nr', num_vars_selected)
         
         
         
@@ -262,19 +251,13 @@ $(function(){
         input_plot.initialize();
         
 
-        if( first_var_select ){
-            first_var_select = false;
-        }else{
-            log_interaction();
-        }
+        log_interaction();
 
         $("#output_display_container").hide();
         
         if(num_vars_selected > 0){
-            console.log('Selected something');
             input_plot.show_loading_message();
         }else{
-            console.log('selected nothing');
             input_plot.show_no_data_message();
         }
         //var selected = this;
