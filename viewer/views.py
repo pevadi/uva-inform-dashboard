@@ -19,7 +19,7 @@ def render_dashboard(request):
     course = get_object_or_404(Course, url=request.authenticated_course)
     day_shift = timedelta(days=int(request.GET.get('day_shift', '0')))
     
-    print 'In render_dashboard', course, day_shift
+    print 'In render_dashboard', course, day_shift, request.authenticated_course 
     if log_access_event:
         DashboardAccessEvent(request.authenticated_user, request.authenticated_course).store()
 
