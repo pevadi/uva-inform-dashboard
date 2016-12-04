@@ -361,7 +361,6 @@ $(function(){
                 input_plot.draw();
                 $.each($("#comparison_data_selector option"), function(){
                     if(!this.selected){
-                        console.log($(this).val());
                         data[$(this).val()] = [];
                     }
                 });

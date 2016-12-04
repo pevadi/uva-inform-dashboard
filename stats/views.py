@@ -270,7 +270,7 @@ def get_grade_so_far(student_id):
     if total_weight > 0:
         return total_weight, grade_so_far
     else:
-        return None
+        return 0,None
 
 # # Returns all student ids within a given grade range based on actual grades
 # def get_student_ids_by_grade_range(min_grade, max_grade, student_ids):
