@@ -7,6 +7,7 @@ class Student(models.Model):
     identification = models.CharField(max_length=255)
     first_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255, blank=True)
+    grade_so_far = models.FloatField(db_index=True, blank=True, null=True)
 
     @property
     def has_treatment(self):

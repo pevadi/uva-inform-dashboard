@@ -242,7 +242,48 @@ def fail_recall(Y_true, Y_pred):
         return None, 0
     return error, len(result)
 
+def normalize_instance(instance, norms):
+    if len(instance) == len(norms):
+        return [instance[i]/float(norms[i]) for i in xrange(len(instance))]
+    else:
+        print "Number of instances should be equal to number of norms."
+        return None
 
+def get_grade_so_far(student_id):
+    from storage.models import Activity
+    from course.models import Assignment
+    from django.core.exceptions import ObjectDoesNotExist 
+
+    # Get the already obtained grades from the activity db
+    assignments = Assignment.objects.all()
+    total_weight = float(0)
+    grade_so_far = 0    
+    for assignment in assignments:
+        # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.
+        try:
+            assignment_activity =  Activity.objects.filter(user=student_id, activity=assignment.url).latest('value')
+            if assignment_activity.value != None:
+                total_weight += assignment.weight
+                grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
+        except ObjectDoesNotExist:
+            continue
+    if total_weight > 0:
+        return total_weight, grade_so_far
+    else:
+        return None
+
+# # Returns all student ids within a given grade range based on actual grades
+# def get_student_ids_by_grade_range(min_grade, max_grade, student_ids):
+#     student_ids_within_range = []
+#     for student_id in student_ids:
+#         total_weight, grade_so_far = get_grade_so_far(student_id)
+#         if total_weight > 0:
+#             if grade_so_far/total_weight >= min_grade and grade_so_far/total_weight <= max_grade:
+#                 student_ids_within_range.append(student_id)
+#     return student_ids_within_range
+
+# Given a list of student ids and a dictionary of variable dictionaries of students (wauw), this
+# function returns machine learning and visualization ready datamatrix and grades vector.
 def extract_xy_values(student_ids, var_names, variable_value_dicts, grades_dict, x_only=False):
     Y = []
     X = []
@@ -337,6 +378,9 @@ def get_variable_stats(request, variable_names):
     from sklearn.model_selection import train_test_split, StratifiedKFold, KFold
     from math import sqrt
     from datetime import timedelta
+    # from storage.models import Activity
+    # from course.models import Assignment
+    # from django.core.exceptions import ObjectDoesNotExist
 
     """Returns the most recent values of a variable.
     
@@ -439,6 +483,7 @@ def get_variable_stats(request, variable_names):
     variable_value_dicts = {}
     variable_value_dicts_comparison = {}
     comparison_student_ids = []
+    comparison_student_ids_nohash = []
     # Loop over all variables
     for var_name in var_names:
         all_values = []
@@ -457,6 +502,7 @@ def get_variable_stats(request, variable_names):
         for indv_student_statistic in comparison_statistic:
             # Add the student statistics to the dict
             student_id = encrypt_value(indv_student_statistic['student'])
+            comparison_student_ids_nohash.append(indv_student_statistic['student'])
             comparison_student_ids.append(student_id)
             variable_value_dicts_comparison[var_name][student_id] = indv_student_statistic
             all_values.append(indv_student_statistic['value'])
@@ -464,6 +510,7 @@ def get_variable_stats(request, variable_names):
         max_values.append(max(all_values))
         min_values.append(min(all_values))
     comparison_student_ids = list(set(comparison_student_ids))
+    comparison_student_ids_nohash = list(set(comparison_student_ids_nohash))
     
     # extract data in matrix form from the value dicts
     X, Y = extract_xy_values(iki_grades.keys(), var_names, variable_value_dicts, iki_grades)  
@@ -474,10 +521,23 @@ def get_variable_stats(request, variable_names):
 
     # Extract data in matrix form from dicts
     X_comparison, _ = extract_xy_values(comparison_student_ids, var_names, variable_value_dicts_comparison, {}, x_only=True)
-    student_index =  X_comparison.index(student_statistics)
-    X_comparison = normalize(X_comparison, axis=0, norm='max')
+    X_comparison, norms =  normalize(X_comparison, axis=0, norm='max', return_norm=True)
+
+    grade_ranges = [(0,4), (6,7.5), (8.5,10)]
+    segments = []
+    for grade_range in grade_ranges:
+        temp_seg = [val.identification for val in Student.objects.filter(grade_so_far__range=grade_range)]
+        temp_X_seg, _ = extract_xy_values([encrypt_value(val) for val in temp_seg], var_names, variable_value_dicts_comparison, {}, x_only=True)
+        temp_X_seg = [normalize_instance(record, norms) for record in temp_X_seg]
+        segments.append(np.mean(temp_X_seg, axis = 0))
+
+
+    print segments
+
     mean_statistics = np.mean(X_comparison, axis = 0)
-    student_statistics = X_comparison[student_index]
+    # mean_statistics = np.mean(X_comparison_segB, axis = 0)
+    # seg_A_statistics = np.mean(X_comparison_segA, axis = 0)
+    student_statistics = normalize_instance(student_statistics, norms)
 
     bin_sizes = []
     bin_fns = []
@@ -524,22 +584,20 @@ def get_variable_stats(request, variable_names):
     regr.fit(X, Y)
 
     # Get the already obtained grades from the activity db
-    from storage.models import Activity
-    from course.models import Assignment
-    from django.core.exceptions import ObjectDoesNotExist
-    assignments = Assignment.objects.all()
-    total_weight = float(0)
-    grade_so_far = 0    
-    for assignment in assignments:
-        # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.)
-        try:
-            assignment_activity =  Activity.objects.filter(user=student.identification, activity=assignment.url).latest('value')
-            print assignment, assignment_activity.value, assignment.max_grade, assignment.weight
-            if assignment_activity.value != None:
-                total_weight += assignment.weight
-                grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
-        except ObjectDoesNotExist:
-            continue
+    total_weight, grade_so_far = get_grade_so_far(student.identification)
+    # assignments = Assignment.objects.all()
+    # total_weight = float(0)
+    # grade_so_far = 0    
+    # for assignment in assignments:
+    #     # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.)
+    #     try:
+    #         assignment_activity =  Activity.objects.filter(user=student.identification, activity=assignment.url).latest('value')
+    #         print assignment, assignment_activity.value, assignment.max_grade, assignment.weight
+    #         if assignment_activity.value != None:
+    #             total_weight += assignment.weight
+    #             grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
+    #     except ObjectDoesNotExist:
+    #         continue
     print total_weight, grade_so_far
 
 #grades_so_far = []
@@ -612,6 +670,9 @@ def get_variable_stats(request, variable_names):
             "variable_names": var_labels,
             "student_statistics": list(student_statistics),
             "mean_statistics" : list(mean_statistics),
+            "A_statistics" : list(segments[0]),
+            "B_statistics" : list(segments[1]),
+            "C_statistics" : list(segments[2]),
             "prediction": prediction,
             "label": variable.label,
             "axis": variable.axis_label or variable.label

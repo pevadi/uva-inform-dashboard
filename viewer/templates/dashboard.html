@@ -206,8 +206,13 @@
     <div id="input_display_container">
         <h2>Studiegedrag</h2>
         <div class="selector_container">
-            <select data-width='350px' id='input_var_selector', class="selectpicker" multiple>
+            <select data-width='150px' id='input_var_selector', class="selectpicker" multiple>
             {% for variable in input_variables %}<option value="{{ variable.name }}" selected="selected">{{ variable.label }}</option>{% endfor %}
+            </select>
+            <select data-width='150px' id='comparison_data_selector', class="selectpicker" multiple>
+            <option value="C_statistics" selected="selected">Best students</option>
+            <option value="B_statistics">Average student</option>
+            <option value="A_statistics">At-risk students</option>
             </select>
         </div>
         <div id="input_display"></div>
@@ -229,6 +234,7 @@ $(function(){
 
     var first_bin_select = true;
 
+
     var prediction = {}, predictions = {};
     $("#input_var_selector").change(function(){
         // Obtain all selected values
@@ -238,6 +244,12 @@ $(function(){
             targets = targets + ";" + $(this).val();
             num_vars_selected++;
         });
+
+
+
+        // $.each($("#comparison_data_selector option:selected"), function(){
+        //     console.log($(this).val());
+        // });
         
         
         
@@ -334,26 +346,25 @@ $(function(){
             });
         }
         else if(num_vars_selected >1){
-            console.log("in elif");
-            console.log(targets);
-            console.log({{ day_shift }});
-
             d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}, function(error, data) {
                 console.log("received json response mul");
                 if( !data || !('prediction' in data) ){
-                    console.log("ohno1");
                     if(data && 'no_data' in data){
                         var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
                         input_plot.show_no_data_message(msg+(data["no_data"].join(', ')));
-                        console.log("ohno2");
                     } else {
-                        console.log("ohno3");
                         input_plot.show_no_data_message("No data available.");
                     }
                     return; 
                 }
                 console.log("RADAR")
                 input_plot.draw();
+                $.each($("#comparison_data_selector option"), function(){
+                    if(!this.selected){
+                        console.log($(this).val());
+                        data[$(this).val()] = [];
+                    }
+                });
                 input_plot.load_data(data);
 
 
@@ -362,7 +373,7 @@ $(function(){
                 $("#output_var_selector").show();
                 var has_prediction_variables = false;
                 for(out_variable in prediction){
-                    console.log(out_variable);
+                    // console.log(out_variable);
                     has_prediction_variables = true;
                     $("#output_var_selector").append(
                         $("<option>")
@@ -391,11 +402,8 @@ $(function(){
 
             });
         }
-
-
-
-
     });
+    
     $("#output_var_selector").change(function(){
         if($(this).val()){
             output_variable = $(this).val()
@@ -409,6 +417,10 @@ $(function(){
             output_plot.draw();
             output_plot.load_data(prediction[output_variable]);
         }
+    });
+
+    $("#comparison_data_selector").change(function(){
+        $("#input_var_selector").change();
     });
 
     $("#input_var_selector").change();

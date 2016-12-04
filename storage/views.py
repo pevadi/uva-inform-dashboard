@@ -32,6 +32,31 @@ def remove_none_values_scores(request=None, debug_out=None):
     Activity.objects.filter(verb="http://adlnet.gov/expapi/verbs/scored", type="http://id.tincanapi.com/activitytype/school-assignment", value=None).delete()
 
 
+def get_grade_so_far(student_id):
+    from storage.models import Activity
+    from course.models import Assignment
+    from django.core.exceptions import ObjectDoesNotExist 
+
+    # Get the already obtained grades from the activity db
+    assignments = Assignment.objects.all()
+    total_weight = float(0)
+    grade_so_far = 0    
+    print student_id
+    for assignment in assignments:
+        # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.
+        try:
+            assignment_activity =  Activity.objects.filter(user=student_id, activity=assignment.url).latest('value')
+            if assignment_activity.value != None:
+                print assignment_activity
+                total_weight += assignment.weight
+                grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
+        except ObjectDoesNotExist:
+            continue
+    if total_weight > 0:
+        return total_weight, grade_so_far
+    else:
+        return 0, None
+
 # This function get ALL data from the LRS, yes, ALL data.
 def update_all(request=None, debug_out=None):
     from django.db.models import Max, Min
@@ -100,7 +125,7 @@ def update_all(request=None, debug_out=None):
 # This functions gets the newest data from the LRS (very, very similar to the function above)
 def update(request=None, debug_out=None):
     from django.db.models import Max, Min
-    from course.models import Course
+    from course.models import Course, Student, CourseGroup
     from stats.models import Variable
     from .models import Activity
     from storage import XAPIConnector
@@ -162,6 +187,21 @@ def update(request=None, debug_out=None):
     for variable in Variable.objects.filter(course__in=Course.objects.filter(active=True)):
         debug("Updating variable %s" % (variable.name,))
         variable.update_from_storage()
+
+    debug("Starting update student grades.")
+    debug('Updating grades for the following course groups')
+    debug(CourseGroup.objects.filter(end_date__gte=datetime.now()))
+    for active_course_group in CourseGroup.objects.filter(end_date__gte=datetime.now()):
+        print len(active_course_group.members.all())
+        for student in active_course_group.members.all():
+            total_weight, updated_grade = get_grade_so_far(student.identification)
+            print student.identification, updated_grade
+            if total_weight > 0:
+                print student.identification, updated_grade/total_weight
+                student.grade_so_far = updated_grade/total_weight
+                student.save()
+
+
 
     if request is not None:
         return HttpResponse(count)
