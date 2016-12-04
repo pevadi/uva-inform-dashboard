@@ -209,7 +209,7 @@
             <select data-width='150px' id='input_var_selector', class="selectpicker" multiple>
             {% for variable in input_variables %}<option value="{{ variable.name }}" selected="selected">{{ variable.label }}</option>{% endfor %}
             </select>
-            <select data-width='150px' id='comparison_data_selector', class="selectpicker" multiple>
+            <select data-width='150px' id='comparison_data_selector', class="selectpicker" multiple >
             <option value="C_statistics" selected="selected">Best students</option>
             <option value="B_statistics">Average student</option>
             <option value="A_statistics">At-risk students</option>
@@ -220,7 +220,7 @@
     <div id="output_display_container">
         <h2>Verwacht studieresultaat</h2>
         <div class="selector_container">
-            <select data-width='350px' id='output_var_selector' class="selectpicker">
+            <select data-width='350px' id='output_var_selector' class='selectpicker' disabled='disabled'>
                 <option value="final_grade" selected="selected">Final Grade</option>
             </select>
         </div>
@@ -272,8 +272,6 @@ $(function(){
         //var selected = this;
 
 
-
-
         if(num_vars_selected == 1){
             d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}, function(error, data) {
                 console.log("Received json response");
@@ -288,6 +286,10 @@ $(function(){
                     return; 
                 }
                 predictions = {};
+
+
+                // Disable comparison selector for single variable
+                document.getElementById("comparison_data_selector").setAttribute("disabled", "disabled");
 
                 for( var i = 0 ; i < data['bins'].length; i++){
                     var d = data['bins'][i];
@@ -355,6 +357,11 @@ $(function(){
                     return; 
                 }
                 console.log("RADAR")
+
+                // Enable comparison selector for single variable
+                // document.getElementById("comparison_data_selector").removeAttribute("disabled");
+                document.getElementById("comparison_data_selector").disabled = false;
+
                 input_plot.draw();
                 $.each($("#comparison_data_selector option"), function(){
                     if(!this.selected){
