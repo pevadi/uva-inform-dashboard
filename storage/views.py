@@ -46,8 +46,8 @@ def get_grade_so_far(student_id):
         # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.
         try:
             assignment_activity =  Activity.objects.filter(user=student_id, activity=assignment.url).latest('value')
-            if assignment_activity.value != None:
-                print assignment_activity
+            if assignment_activity.value != None and assignment_activity.value != 0:
+                print assignment_activity, assignment.weight
                 total_weight += assignment.weight
                 grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
         except ObjectDoesNotExist:
