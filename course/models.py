@@ -8,6 +8,8 @@ class Student(models.Model):
     first_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255, blank=True)
     grade_so_far = models.FloatField(db_index=True, blank=True, null=True)
+    assignments_completion = models.FloatField(db_index=True, blank=True, null=True)
+    predicted_grade = models.FloatField(db_index=True, blank=True, null=True)
 
     @property
     def has_treatment(self):
