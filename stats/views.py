@@ -404,6 +404,7 @@ def get_grade_so_far(student_id):
         try:
             assignment_activity =  Activity.objects.filter(user=student_id, activity=assignment.url).latest('value')
             if assignment_activity.value != None:
+                print assignment, assignment_activity, assignment_activity.value/assignment.max_grade
                 total_weight += assignment.weight
                 grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
         except ObjectDoesNotExist:
@@ -598,6 +599,9 @@ def get_variable_stats(request, variable_names):
             comparison_statistics[variable.name] = variable.calculate_statistics_from_values(value_history_comparison)
             student_statistics.append(variable.calculate_statistics_from_values(value_history_student)[0]['value'])
             student_statistics_obj.append(variable.calculate_statistics_from_values(value_history_student)[0])
+        else:
+            student_statistics.append(0)
+            comparison_statistics[variable.name] = variable.calculate_statistics_from_values(value_history_comparison)
 
 
     # Collect relevant value statistics for model building. Y 2015-2016 (pk=2) was selected for this purpose
@@ -674,7 +678,7 @@ def get_variable_stats(request, variable_names):
     X_comparison, _ = extract_xy_values(comparison_student_ids, var_names, variable_value_dicts_comparison, {}, x_only=True)
     X_comparison, norms =  normalize(X_comparison, axis=0, norm='max', return_norm=True)
 
-    grade_ranges = [(0,6), (6,7.5), (8.5,10)]
+    grade_ranges = [(0,6), (6,8), (8,10)]
     segments = []
     for grade_range in grade_ranges:
         temp_seg = [val.identification for val in Student.objects.filter(grade_so_far__range=grade_range)]
