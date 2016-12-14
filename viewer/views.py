@@ -52,15 +52,13 @@ def render_dashboard(request):
     if User.objects.filter(username=request.session.get("authenticated_user")):
         if User.objects.filter(username=request.session.get("authenticated_user"))[0].is_authenticated:
             students = Student.objects.filter(statistic_groups=group)
-            no_grade_list = []
+            uid_students = []
             for x in xrange(len(students)):
                 student = students[x]
-                if not student.grade_so_far:
-                    no_grade_list.append(x)
-            for i in sorted(no_grade_list, reverse=True):
-                students = students.exclude(identification=students[i])
-
-            students = sorted(students, key=operator.attrgetter('grade_so_far'))
+                if student.grade_so_far and student.has_treatment:
+                    uid_students.append(student)
+            
+            students = sorted(uid_students, key=operator.attrgetter('grade_so_far'))
              # Determine what variables the first student has data for (and thus will be forwarded to their dropdown menu)
             variables = course.variable_set.exclude(type='OUT').order_by('order')
             course_datetime_now = group.calculate_course_datetime(timezone.now()+day_shift)
