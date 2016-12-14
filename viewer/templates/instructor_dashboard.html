@@ -254,7 +254,7 @@
             <tr class='clickable-row' data-href = {{student.identification}}>
                  <td>{{student.identification }}</td>
                  <td>{{student.grade_so_far|floatformat }}</td>
-                 <td>{{student.assignments_completion }}</td>
+                 <td>{{student.assignments_completion|floatformat:2 }}</td>
                  <td>{{student.predicted_grade }}</td>
             </tr>
         {%endfor%}
@@ -298,7 +298,7 @@ $(function(){
         $("#output_display_container").show();
 
         $("#input_var_selector").change();
-        $("#output_var_selector").change();
+        //$("#output_var_selector").change();
     });
 
     var first_bin_select = true;
