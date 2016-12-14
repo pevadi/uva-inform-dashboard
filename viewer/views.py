@@ -30,6 +30,7 @@ def render_dashboard(request):
     try:
         student = Student.objects.get(identification=request.session.get("authenticated_user"))
     except Student.DoesNotExist:
+        print "Failed to find student", request.session.get("authenticated_user")
         return render(request, "dashboard.html", {
             'log_access': log_access_event,
             'day_shift': request.GET.get('day_shift', '0'),
