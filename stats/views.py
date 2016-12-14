@@ -390,40 +390,6 @@ def normalize_instance(instance, norms):
         print "Number of instances should be equal to number of norms."
         return None
 
-def get_grade_so_far(student_id):
-    from storage.models import Activity
-    from course.models import Assignment
-    from django.core.exceptions import ObjectDoesNotExist 
-
-    # Get the already obtained grades from the activity db
-    assignments = Assignment.objects.all()
-    total_weight = float(0)
-    grade_so_far = 0    
-    for assignment in assignments:
-        # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.
-        try:
-            assignment_activity =  Activity.objects.filter(user=student_id, activity=assignment.url).latest('value')
-            if assignment_activity.value != None:
-                print assignment, assignment_activity, assignment_activity.value/assignment.max_grade
-                total_weight += assignment.weight
-                grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
-        except ObjectDoesNotExist:
-            continue
-    if total_weight > 0:
-        return total_weight, grade_so_far
-    else:
-        return 0,None
-
-# # Returns all student ids within a given grade range based on actual grades
-# def get_student_ids_by_grade_range(min_grade, max_grade, student_ids):
-#     student_ids_within_range = []
-#     for student_id in student_ids:
-#         total_weight, grade_so_far = get_grade_so_far(student_id)
-#         if total_weight > 0:
-#             if grade_so_far/total_weight >= min_grade and grade_so_far/total_weight <= max_grade:
-#                 student_ids_within_range.append(student_id)
-#     return student_ids_within_range
-
 # Given a list of student ids and a dictionary of variable dictionaries of students (wauw), this
 # function returns machine learning and visualization ready datamatrix and grades vector.
 def extract_xy_values(student_ids, var_names, variable_value_dicts, grades_dict, x_only=False):
@@ -522,14 +488,10 @@ def get_variable_stats(request, variable_names):
     from datetime import timedelta
     from django.contrib.auth.models import User
 
-    # from storage.models import Activity
-    # from course.models import Assignment
-    # from django.core.exceptions import ObjectDoesNotExist
-
-    """Returns the most recent values of a variable.
+    """returns the most recent values of a variable.
     
-    Parameters:
-        variable_name   -   The variable for which to lookup the values.
+    parameters:
+        variable_name   -   the variable for which to lookup the values.
     """
     # Ensure the request uses the GET method.  
     if not request.method == "GET":
@@ -737,8 +699,8 @@ def get_variable_stats(request, variable_names):
     regr.fit(X, Y)
 
     # Get the already obtained grades from the activity db
-    total_weight, grade_so_far = get_grade_so_far(student.identification)
-
+    grade_so_far = student.grade_so_far*student.assignments_completion
+    total_weight = student.assignments_completion
     print total_weight, grade_so_far
 
 
@@ -753,7 +715,6 @@ def get_variable_stats(request, variable_names):
     # Update predicted grade in database
     if len(student_statistics) > 5:
         student.predicted_grade = regr.predict([student_statistics])[0]
-        student.assignments_completion = total_weight
         student.save()
 
     ######################################################################################
