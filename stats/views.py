@@ -699,7 +699,10 @@ def get_variable_stats(request, variable_names):
     regr.fit(X, Y)
 
     # Get the already obtained grades from the activity db
-    grade_so_far = student.grade_so_far*student.assignments_completion
+    if student.assignments_completion > 0:
+        grade_so_far = student.grade_so_far*student.assignments_completion
+    else:
+        grade_so_far = 0
     total_weight = student.assignments_completion
     print total_weight, grade_so_far
 
@@ -708,8 +711,6 @@ def get_variable_stats(request, variable_names):
         print 'Student info:'
         print student.identification, iki_grades[encrypt_value(student.identification)], regr.predict([student_statistics])[0]
     except KeyError:
-        if grade_so_far == None:
-            grade_so_far = 0
         print student.identification, 'no grade', regr.predict([student_statistics])[0], grade_so_far + (regr.predict([student_statistics])[0]*(float(1)-total_weight))
 
     # Update predicted grade in database
