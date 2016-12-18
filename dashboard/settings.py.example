@@ -18,7 +18,6 @@ from pepijn import password
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
@@ -26,9 +25,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [*]
 CORS_ORIGIN_ALLOW_ALL = True
 
 from corsheaders.defaults import default_headers
@@ -121,11 +120,14 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-AUTHENTICATION_SECRET = "shared secret to sign URLs"
+AUTHENTICATION_SECRET = os.environ['AUTHENTICATION']
 
+# Set to true is deployment version
 STORE_IN_LRS = False
+
 from datetime import timedelta
-LRS_TIME_OFFSET = (lambda t: t - timedelta(seconds=30))
+# This offset deals with time differences between servers
+LRS_TIME_OFFSET = (lambda t: t - timedelta(seconds=300))
 
 LRS = {
     'username': os.environ['LRS_USERNAME'],
