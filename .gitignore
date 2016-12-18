@@ -8,10 +8,11 @@ __pycache__/
 # DB
 db.sqlite3
 
-# Settings
+# Settings 
 settings.py
 settings.*
 *.example
+prod_settings.py.example
 
 # No csv files
 *.csv
