@@ -50,6 +50,73 @@ function Plotter(container){
 		$(container).append($("<div>")
 			.addClass("no-data-message")
 			.text(msg));
+		$(container).append($("<div>")
+			.addClass("loader"));
+	};
+}
+
+function RadarPlotter(container){
+
+	var _parent = new Plotter(container);
+	var _this = $.extend(this, _parent);
+
+	var margin, width, height;
+	var chart;
+
+	_this.initialize = function(){
+		margin = { top: 10, right: 10, bottom: 20, left: 10 };
+		width = _this.get_container_width() - margin.left - margin.right;
+		height = _this.get_container_height() - margin.top - margin.bottom;
+	};
+
+	_this.draw = function(){
+		_this.clear_canvas();
+
+		chart = d3.select(container).append("svg")
+            .attr("width", width +margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+           .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	};
+
+	_this.load_data = function(data){
+		if(data){
+            var chart = RadarChart.chart();
+            RadarChart.defaultConfig.radius = 3;
+			RadarChart.defaultConfig.w = width;
+			RadarChart.defaultConfig.h = height;
+			RadarChart.defaultConfig.maxValue = 1;
+			radar_ready_data = [];
+			var var_names = data['variable_names'];
+			var student_statistics = data['student_statistics'];
+			var mean_statistics = data['mean_statistics'];
+
+			if(var_names.length == 2){
+				RadarChart.defaultConfig.radius = 6;
+			}
+
+
+			// Student data
+			studentSeries = {className:'student', axes:[]};
+			for( var i = 0 ; i < student_statistics.length; i++){
+				studentSeries['axes'][i] = {axis:var_names[i], value:student_statistics[i]};
+			}
+			radar_ready_data[0] = studentSeries;
+
+			// Students mean data
+			studentsMeanSeries = {className:'Other students', axes:[]};
+			for( var i = 0 ; i < mean_statistics.length; i++){
+				studentsMeanSeries['axes'][i] = {axis:var_names[i], value:mean_statistics[i]};
+			}
+			radar_ready_data[1] = studentsMeanSeries;
+			console.log(studentSeries);
+
+			RadarChart.draw(container, radar_ready_data);
+
+		}else{
+			_this.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+		}
 	};
 }
 
@@ -381,7 +448,9 @@ function BarPlotter(container){
 			.attr("width",  x.rangeBand())
 			.attr("height", sliderHeight-(2*sliderPadding));
 
-		if(student_bin){
+		if(student_bin>-1){
+			console.log("student bin found")
+			_this.select_active("g[data-bin='"+student_bin+"']");
 			var student_bar = d3.select("g[data-bin='"+student_bin+"']")
 				.classed("bar-you", true)
 				.append("text")
@@ -396,7 +465,7 @@ function BarPlotter(container){
 				.text("*");
 		}
 
-		_this.select_active("g[data-bin='"+student_bin+"']");
+		// _this.select_active("g[data-bin='"+student_bin+"']");
 	}
 }
 

@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+import settings
+from django.conf.urls import patterns
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
@@ -30,3 +32,9 @@ urlpatterns = [
     url(r'^$', "viewer.views.render_dashboard", name="render"),
     url(r'^treatment/?$', "viewer.views.has_treatment", name="has_treatment"),
 ]
+
+
+if settings.DEBUG is False:   #if DEBUG is True it will be served automatically
+    urlpatterns += patterns('',
+            url(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
+    )

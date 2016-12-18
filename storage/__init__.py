@@ -53,11 +53,13 @@ class XAPIConnector(object):
                 auth=HTTPBasicAuth(self._userName,self._secret),
                 headers={"Content-Type":"application/json",
                      self.VERSIONHEADER:self.VERSION})
-
         except IOError as e:
+            print 'IO error in submitstatement', e
             if self.logger is not None:
                 self.logger.error(e)
-        else:
+        else:   
+            if resp.status_code != 200:
+                print 'Error submitting statement to LRS', resp.content
             return resp
 
 

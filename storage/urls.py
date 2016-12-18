@@ -3,6 +3,7 @@ from views import *
 
 urlpatterns = [
     url(r'^update/?$', update, name='update'),
+    url(r'^update_all/?$', update_all, name='update_all'),
     url(r'^events/store_presence_events/?$', store_presence_events,
         name='store_presence_events'),
     url(r'^events/video/watch/?$', store_video_watch_event,

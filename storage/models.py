@@ -96,10 +96,8 @@ class Activity(models.Model):
             description = statement['object']['definition']['description']['en-US']
         except KeyError:
             description = ""
-
         time = dateparser.parse(statement['timestamp'])
         stored = dateparser.parse(statement['stored'])
-
         value = None
         min_score = None
         max_score = None
@@ -116,8 +114,7 @@ class Activity(models.Model):
                     value = (raw_score - min_score) / float(max_score - min_score)
             if 'extensions' in result:
                 for ext_key, ext_value in result['extensions'].items():
-                    extension, _c = ActivityExtension.objects.get_or_create(
-                            key=ext_key, value=ext_value, location='R')
+                    extension, _c = ActivityExtension.objects.get_or_create(key=ext_key, value=ext_value, location='R')
                     extensions.append(extension)
             if 'duration' in result:
                 from isodate import ISO8601Error, parse_duration

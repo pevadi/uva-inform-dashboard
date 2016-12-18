@@ -1,1 +1,1 @@
-[{"fields": {"verbs": [4], "compare_method": "A", "types": [5]}, "model": "stats.assignmentlinkedvariable", "pk": 7}, {"fields": {"verbs": [5], "compare_method": "B", "types": [1]}, "model": "stats.assignmentlinkedvariable", "pk": 8}, {"fields": {"verbs": [5], "compare_method": "B", "types": [1]}, "model": "stats.assignmentlinkedvariable", "pk": 9}]
+[]

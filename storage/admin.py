@@ -3,8 +3,8 @@ from .models import *
 
 
 class ActivityAdmin(admin.ModelAdmin):
-    list_display = ('user', 'time','verb', 'activity', 'course', 'value')
-    list_filter = ('course', 'verb')
+    list_display = ('user', 'time','verb', 'activity', 'course', 'value', 'type')
+    list_filter = ('course', 'verb', 'type')
     search_fields = ('activity',)
 
 admin.site.register(Activity, ActivityAdmin)

@@ -7,6 +7,9 @@ class Student(models.Model):
     identification = models.CharField(max_length=255)
     first_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255, blank=True)
+    grade_so_far = models.FloatField(db_index=True, blank=True, null=True)
+    assignments_completion = models.FloatField(db_index=True, blank=True, null=True)
+    predicted_grade = models.FloatField(db_index=True, blank=True, null=True)
 
     @property
     def has_treatment(self):
@@ -81,7 +84,7 @@ class CourseGroup(models.Model):
 
     @classmethod
     def get_groups_by_date(cls, date, **kwargs):
-        return cls.objects.filter(start_date__lte=date,
+	return cls.objects.filter(start_date__lte=date,
                 end_date__gte=date, **kwargs)
 
     def calculate_course_datetime(self, datetime_value=None):
@@ -106,6 +109,8 @@ class Assignment(models.Model):
     date_available = models.DateTimeField(null=True, blank=True)
     date_due = models.DateTimeField(null=True, blank=True)
     course = models.ForeignKey(Course)
+    weight = models.FloatField(blank=True, null=True)
+    max_grade = models.IntegerField(blank=True, null=True)
 
     def __unicode__(self):
         return unicode(self.title)

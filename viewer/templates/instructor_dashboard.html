@@ -1,7 +1,7 @@
 {% load staticfiles %}
 <!DOCTYPE html>
 <html>
-<head><title>UvAInform dashboard</title>
+<head><title>UvAInform Instructor Dashboard</title>
     <meta http-equiv="cache-control" content="no-cache"> 
     <meta http-equiv="expires" content="0"> 
     <meta http-equiv="pragma" content="no-cache">
@@ -14,9 +14,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
     <script>window.d3 || document.write('<script src="{% static "js/d3.min.js" %}">\x3C/script>')</script> 
     <script type="text/javascript" src="../static/js/radar-chart.js"></script>
-<script type='text/javascript' src="{% static 'js/radar-chart.js' %}"></script>
-<script type='text/javascript' src="{% static 'js/gaussian.js' %}"></script>
-<script type='text/javascript' src="{% static 'js/plotter.js' %}"></script>
+    <script type='text/javascript' src="{% static 'js/radar-chart.js' %}"></script>
+    <script type='text/javascript' src="{% static 'js/gaussian.js' %}"></script>
+    <script type='text/javascript' src="{% static 'js/plotter.js' %}"></script>
 </head>
 <body>
 <style>
@@ -53,6 +53,42 @@
         font: 10px sans-serif;
         text-align: center;
     }
+    
+    #student_table
+    {
+        /*font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;*/
+        font-size: 12px;
+        background: #fff;
+        margin: 45px;
+        /*width: 45%;*/
+        border-collapse: collapse;
+        text-align: left;
+    }
+    #student_table th
+    {
+        font-size: 14px;
+        font-weight: normal;
+        /*color: #039;*/
+        padding: 10px 8px;
+        border-bottom: 2px solid ;
+    }
+    #student_table td
+    {
+        /*color: #669;*/
+        padding: 9px 8px 0px 8px;
+    }
+
+    #student_table tbody tr:hover td
+    {
+        cursor:pointer;
+        color: #009;
+    }
+
+    #student_table tbody tr.highlight td 
+    { 
+        color: #3232ad; 
+    }
+
 
     #input_display, #output_display {
         width: 100%;
@@ -201,10 +237,34 @@
 
 </style>
 
-
 <div id="display_container">
     <div id="input_display_container">
-        <h2>Studiegedrag</h2>
+    <h2>Students</h2>
+     <table id="student_table" >
+        <thead>
+            <tr>
+            <th scope="col">Student ID</th>
+            <th scope="col">Grade so far</th>
+            <th scope="col">Completion</th>
+            <th scope="col">Predicted grade</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for student in students %}
+            <tr class='clickable-row' data-href = {{student.identification}}>
+                 <td>{{student.identification }}</td>
+                 <td>{{student.grade_so_far|floatformat }}</td>
+                 <td>{{student.assignments_completion|floatformat:2 }}</td>
+                 <td>{{student.predicted_grade }}</td>
+            </tr>
+        {%endfor%}
+        </tbody>
+    </table> 
+    </div>
+    <div id="output_display_container">
+        <h2>Student details</h2>
+        <br>
+        <br>
         <div class="selector_container">
             <select data-width='150px' id='input_var_selector', class="selectpicker" multiple>
             {% for variable in input_variables %}<option value="{{ variable.name }}" selected="selected">{{ variable.label }}</option>{% endfor %}
@@ -216,9 +276,7 @@
             </select>
         </div>
         <div id="input_display"></div>
-    </div>
-    <div id="output_display_container">
-        <h2>Verwacht studieresultaat</h2>
+        <h3></h3>
         <div class="selector_container">
             <select data-width='350px' id='output_var_selector' class='selectpicker' disabled='disabled'>
                 <option value="final_grade" selected="selected">Final Grade</option>
@@ -229,8 +287,20 @@
 </div>
 
 <script>
-var output_plot;
 $(function(){
+    var selected_student
+    $("#output_display_container").hide();
+
+    $(".clickable-row").click(function() {
+        $(this).addClass('highlight').siblings().removeClass('highlight');
+        selected_student = $(this).data("href");
+
+        $("#output_display_container").show();
+
+        $("#input_var_selector").change();
+        //$("#output_var_selector").change();
+    });
+
     var first_bin_select = true;
     var prediction = {}, predictions = {};
     $("#input_var_selector").change(function(){
@@ -241,6 +311,7 @@ $(function(){
             targets = targets + ";" + $(this).val();
             num_vars_selected++;
         });
+        $("#output_display").hide();
 
         // Initialize visual area
         if(num_vars_selected <= 1){
@@ -250,17 +321,18 @@ $(function(){
         }
 
         input_plot.initialize();
-        log_interaction();
-        $("#output_display_container").hide();
+        
         
         if(num_vars_selected > 0){
             input_plot.show_loading_message();
         }else{
             input_plot.show_no_data_message();
         }
+        var selected = this;
+
 
         if(num_vars_selected == 1){
-            d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}, function(error, data) {
+            d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}+"&selected_student="+selected_student, function(error, data) {
                 if( !data || !('bins' in data) ){
                     if(data && 'no_data' in data){
                         var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
@@ -272,6 +344,7 @@ $(function(){
                 }
                 predictions = {};
 
+
                 // Disable comparison selector for single variable
                 document.getElementById("comparison_data_selector").setAttribute("disabled", "disabled");
 
@@ -279,7 +352,7 @@ $(function(){
                     var d = data['bins'][i];
                     predictions[""+d['id']] = d['predictions'];
                     if(i == 0){
-                        $("#output_var_selector").show();
+                        $("#output_display").show();
                         var has_prediction_variables = false;
                         for(variable in d['predictions']){
                             has_prediction_variables = true;
@@ -325,7 +398,7 @@ $(function(){
             });
         }
         else if(num_vars_selected >1){
-            d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}, function(error, data) {
+            d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}+"&selected_student="+selected_student, function(error, data) {
                 if( !data || !('prediction' in data) ){
                     if(data && 'no_data' in data){
                         var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
@@ -337,7 +410,6 @@ $(function(){
                 }
 
                 // Enable comparison selector for single variable
-                // document.getElementById("comparison_data_selector").removeAttribute("disabled");
                 document.getElementById("comparison_data_selector").disabled = false;
 
                 input_plot.draw();
@@ -361,7 +433,7 @@ $(function(){
                 }
 
                 if(has_prediction_variables){
-                    $("#output_display_container").show();
+                    $("#output_display").show();
                     output_variable = $("#output_var_selector").val();
                     if(prediction[output_variable]['chart'] == "GSS"){
                         output_plot = new GaussPlotter("#output_display");
@@ -379,7 +451,7 @@ $(function(){
             });
         }
     });
-    
+
     $("#output_var_selector").change(function(){
         if($(this).val()){
             output_variable = $(this).val()
@@ -398,9 +470,6 @@ $(function(){
     $("#comparison_data_selector").change(function(){
         $("#input_var_selector").change();
     });
-
-    $("#input_var_selector").change();
-    $("#output_var_selector").change();
 });
 
 var interaction_log_timer;
