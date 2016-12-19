@@ -206,7 +206,7 @@ def get_variable_stats(request, variable_names):
 
     # Use machine learning to create a predictive model
     Y = np.array(Y).astype(dtype='float')
-    Y_binarized = [y>5.4 for y in Y]
+    # Y_binarized = [y>5.4 for y in Y]
     X = np.array(X).astype(dtype='float')
    
     from sklearn.neighbors import KNeighborsRegressor
@@ -217,16 +217,17 @@ def get_variable_stats(request, variable_names):
         regr = KNeighborsRegressor()
 
     # Evaluate the model 
-    mean_abs_error, root_mean_square_error, fail_pass_accuracy, failing_students_recall = stratified_cross_val_score(X, Y, regr, Y_binarized, rounds = 50)
+    scores = stratified_cross_val_score(X, Y, regr, rounds = 50)
+    mean_abs_error, root_mean_square_error, fail_pass_accuracy, failing_students_recall = stratified_cross_val_score(X, Y, regr, rounds = 50)
 
     # Baseline classifiers says always pass
     baseline_accuracy = (float)(len([x for x in Y if x > 5.4]))/len(Y)
     print 'Performance report:'
     print 'Baseline classifier (fail/pass)', baseline_accuracy
-    print 'Mean absolute error', mean_abs_error
-    print 'Root mean square error', root_mean_square_error
-    print 'Fail/pass accuracy', fail_pass_accuracy
-    print 'Failing students recall:',failing_students_recall, '\n' #,'of', n_failing, 'failing students'
+    print 'Mean absolute error', scores['mae']
+    print 'Root mean square error', scores['rmse']
+    print 'Fail/pass accuracy', scores['fpa']
+    print 'Failing students recall:',scores['fsr'], '\n' #,'of', n_failing, 'failing students'
 
     # Now train again using all instances, this model is used for final prediction
     regr.fit(X, Y)
@@ -278,7 +279,7 @@ def get_variable_stats(request, variable_names):
                 predicted_grade = grade_so_far + (regr.predict([[mean_bin]])[0]*(float(1)-total_weight))
             else:
                 predicted_grade = student.predicted_grade
-            predictions['final_grade'] = {'mean': predicted_grade, 'variance':root_mean_square_error[0]}
+            predictions['final_grade'] = {'mean': predicted_grade, 'variance':scores['rmse'][0]}
             predictions['final_grade']['chart'] = 'GSS'
             predictions['final_grade']['label'] = 'Final Grade'
             predictions['final_grade']['axis'] = 'final grade'
@@ -306,7 +307,7 @@ def get_variable_stats(request, variable_names):
         else:
             predicted_grade = student.predicted_grade
         prediction = {}
-        prediction['final_grade'] = {'mean': predicted_grade, 'variance':root_mean_square_error[0]}
+        prediction['final_grade'] = {'mean': predicted_grade, 'variance':scores['rmse'][0]}
         prediction['final_grade']['chart'] = 'GSS'
         prediction['final_grade']['label'] = 'Final Grade'
         prediction['final_grade']['axis'] = 'final grade'
