@@ -301,12 +301,20 @@ $(function(){
     $("#output_display_container").hide();
 
     $(".clickable-row").click(function() {
+    //$("#student_table").delegate("click", ".clickable-row",function(){
+    //$(document).delegate("click",".clickable-row",function(){
+    //$(".clickable-row").live('click', function(){
         $(this).addClass('highlight').siblings().removeClass('highlight');
         selected_student = $(this).data("href");
 
         $("#output_display_container").show();
+        $("#input_var_selector").change(); 
+        //$(this).addClass('highlight').siblings().removeClass('highlight');
+        //selected_student = $(this).data("href");
 
-        $("#input_var_selector").change();
+
+
+
         //$("#output_var_selector").change();
     });
 
@@ -415,11 +423,12 @@ $(function(){
                     } else {
                         console.log("Oke geen data");
                         console.log(data);
-                        console.log(error);
                         input_plot.show_no_data_message("No data available.");
                     }
                     return; 
                 }
+                //$("#input_display_container").load(location.href + " #input_display_container>*","");
+
 
                 // Enable comparison selector for single variable
                 document.getElementById("comparison_data_selector").disabled = false;
@@ -497,5 +506,6 @@ function send_interaction_event(){
         $.post("//{{ request.get_host }}{% url 'storage:store_interacted_event' %}?"+signed_params);
     {% endif %}
 }
+
 </script>
 </html>
