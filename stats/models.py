@@ -59,20 +59,26 @@ class Variable(PolymorphicModel):
         """
         # Retrieve new activity instances for this variable.
         from storage.models import Activity
+        from datetime import datetime
+        start=datetime.now()
         ignored_objects = IgnoredObject.objects.all().values_list(
                 'object_id', flat=True)
         activities = Activity.objects.exclude(
                 activity__in=ignored_objects).filter(
                         course=self.course.url,
                         pk__gt=self.last_consumed_activity_pk)
+        print datetime.now()-start, len(activities), self.last_consumed_activity_pk
+        start=datetime.now()
         # Return new ValueHistory instances and the last consumed Activity
         # instance based on the new activities.
         value_history, last_consumed = self.calculate_values_from_activities(
             activities)
         # If no activity was consumed, stop.
+        print datetime.now()-start
+
         if last_consumed is None:
             return
-
+        start=datetime.now()
         annotated_value_history = []
         for value_history_item in value_history:
             # Determine the attached course groups. Technically someone could
@@ -99,14 +105,16 @@ class Variable(PolymorphicModel):
                     datetime.combine(group.start_date,
                         datetime.min.time())))
             annotated_value_history.append(value_history_item)
-
+        print datetime.now()-start
+        start=datetime.now()
         # Update the database by adding the new ValueHistory instances
         ValueHistory.objects.bulk_create(annotated_value_history)
-
+        print datetime.now()-start
+        start=datetime.now()
         # Set the last consumed activity
         self.last_consumed_activity_pk = last_consumed.pk
         self.save()
-
+        print datetime.now()-start
     def calculate_values_from_activities(self, activities):
         """Calculates the appropriate values based on the stored activities.
 
