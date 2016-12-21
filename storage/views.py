@@ -42,8 +42,6 @@ def get_grade_so_far(student_id, debug_out=None):
             debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), msg))
             print("[%s] %s \n" % (datetime.now().isoformat(), msg))
 
-
-    
     presentation_urls = ['https://blackboard.uva.nl/205613/6393528', 'https://blackboard.uva.nl/205613/6393527','https://blackboard.uva.nl/205613/6139279']
 
     # Get the already obtained grades from the activity db
@@ -146,7 +144,7 @@ def update(request=None, debug_out=None):
     from datetime import datetime
     xapi = XAPIConnector()
     #debug_out = True
-    debug_out = open("../../../home/pepijn/update.log", "rw+")
+    debug_out = open("../../../home/pepijn/update.log", "a")
     def debug(msg):
         if debug_out is not None:
             debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), msg))
@@ -220,7 +218,7 @@ def update_grades(request=None, debug_out=None):
     start_time = time.time()
     from course.models import CourseGroup
     from datetime import datetime
-    debug_out = open("../../../home/pepijn/update.log", "rw+")
+    debug_out = open("../../../home/pepijn/update.log", "a")
     def debug(msg):
         if debug_out is not None:
             debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), msg))
