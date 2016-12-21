@@ -32,18 +32,25 @@ def remove_none_values_scores(request=None, debug_out=None):
     Activity.objects.filter(verb="http://adlnet.gov/expapi/verbs/scored", type="http://id.tincanapi.com/activitytype/school-assignment", value=None).delete()
 
 
-def get_grade_so_far(student_id):
+def get_grade_so_far(student_id, debug_out=None):
     from storage.models import Activity
     from course.models import Assignment
     from django.core.exceptions import ObjectDoesNotExist 
+    from datetime import datetime
+    def debug(msg):
+        if debug_out is not None:
+            debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), msg))
+            print("[%s] %s \n" % (datetime.now().isoformat(), msg))
+
+
     
-    presentation_urls = ['https://blackboard.uva.nl/205613/6393528', 'https://blackboard.uva.nl/205613/6393527']
+    presentation_urls = ['https://blackboard.uva.nl/205613/6393528', 'https://blackboard.uva.nl/205613/6393527','https://blackboard.uva.nl/205613/6139279']
 
     # Get the already obtained grades from the activity db
     assignments = Assignment.objects.all()
     total_weight = float(0)
     grade_so_far = 0    
-    print student_id
+    debug("Current student: %s" % (student_id)) 
     for assignment in assignments:
         # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.
         try:
@@ -51,9 +58,9 @@ def get_grade_so_far(student_id):
             if assignment_activity.value != None:
                 # We ignore zeros for presentations because those are definite errors
                 if assignment_activity.value == 0  and assignment.url in presentation_urls:
-                    print 'Skip zeros for presentation'
+                    debug("Skipped %s" % (assignment.url))
                 else:
-                    print assignment_activity, assignment.weight
+                    debug("Processed %s with weight: %d" % (assignment_activity, assignment.weight))
                     total_weight += assignment.weight
                     grade_so_far += ((assignment_activity.value / assignment.max_grade * 10) * assignment.weight)
         except ObjectDoesNotExist:
@@ -65,7 +72,6 @@ def get_grade_so_far(student_id):
 
 # This function get ALL data from the LRS, yes, ALL data.
 def update_all(request=None, debug_out=None):
-    from django.db.models import Max, Min
     from course.models import Course
     from stats.models import Variable
     from .models import Activity
@@ -130,6 +136,8 @@ def update_all(request=None, debug_out=None):
 
 # This functions gets the newest data from the LRS (very, very similar to the function above)
 def update(request=None, debug_out=None):
+    import time
+    start_time = time.time()
     from django.db.models import Max, Min
     from course.models import Course, Student, CourseGroup
     from stats.models import Variable
@@ -137,9 +145,13 @@ def update(request=None, debug_out=None):
     from storage import XAPIConnector
     from datetime import datetime
     xapi = XAPIConnector()
+    #debug_out = True
+    debug_out = open("../../../home/pepijn/update.log", "rw+")
     def debug(msg):
         if debug_out is not None:
-            debug_out.write("[%s] %s" % (datetime.now().isoformat(), msg))
+            debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), msg))
+            print("[%s] %s" % (datetime.now().isoformat(), msg))
+
 
     total_count = 0
     total_skipped = 0
@@ -164,10 +176,9 @@ def update(request=None, debug_out=None):
             skipped = 0
             debug("Fetch URL variation '%s'" % (url,))
             activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
-            print 'n# of activities', len(activities)
             if activities is None:
                 continue
-            debug("Fetched activities from storage count: %d" % (len(activities),))
+            debug("Fetched activities from storage count: %d" % (len(activities)))
             for activity in activities:
                 try:
                     ctactivities = activity['context']['contextActivities']
@@ -194,26 +205,49 @@ def update(request=None, debug_out=None):
         debug("Updating variable %s" % (variable.name,))
         variable.update_from_storage()
 
+    debug("Elapsed:  %s seconds" % (time.time() - start_time))
+    if request is not None:
+        debug("Finished (auto), imported %d activities." % (total_count,))
+        debug.close()
+        return HttpResponse(count)
+    else:
+        debug("Finished (manual), imported %d activities." % (total_count,))
+        debug_out.close()
+
+# This functions gets the newest data from the LRS (very, very similar to the function above)
+def update_grades(request=None, debug_out=None):
+    import time
+    start_time = time.time()
+    from course.models import CourseGroup
+    from datetime import datetime
+    debug_out = open("../../../home/pepijn/update.log", "rw+")
+    def debug(msg):
+        if debug_out is not None:
+            debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), msg))
+            print("[%s] %s" % (datetime.now().isoformat(), msg))
+
     debug("Starting update student grades.")
     debug('Updating grades for the following course groups')
-    debug(CourseGroup.objects.filter(end_date__gte=datetime.now()))
-    for active_course_group in CourseGroup.objects.filter(end_date__gte=datetime.now()):
-        print len(active_course_group.members.all())
+    
+    active_course_groups = CourseGroup.objects.filter(end_date__gte=datetime.now())
+    debug(active_course_groups)
+    for active_course_group in active_course_groups:
+        debug("Number of active course groups: %d" % (len(active_course_group.members.all())))
         for student in active_course_group.members.all():
-            total_weight, updated_grade = get_grade_so_far(student.identification)
-            print student.identification, updated_grade
+            total_weight, updated_grade = get_grade_so_far(student.identification, debug_out)
             if total_weight > 0:
-                print student.identification, updated_grade/total_weight
+                debug("Updated grade (/totalweight)  %s: %d" % (student.identification, updated_grade/total_weight))
                 student.grade_so_far = updated_grade/total_weight
                 student.assignments_completion = total_weight   
                 student.save()
 
 
-
+    debug("Elapsed:  %s seconds" % (time.time() - start_time))
     if request is not None:
+        debug_out.close()
         return HttpResponse(count)
     else:
-        debug("Finished, imported %d activities." % (total_count,))
+        debug_out.close()
 
 
 def store_presence_events(request):
