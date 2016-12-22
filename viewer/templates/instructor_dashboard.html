@@ -301,176 +301,178 @@ $(function(){
     $("#output_display_container").hide();
 
     $(".clickable-row").click(function() {
-    //$("#student_table").delegate("click", ".clickable-row",function(){
-    //$(document).delegate("click",".clickable-row",function(){
-    //$(".clickable-row").live('click', function(){
         $(this).addClass('highlight').siblings().removeClass('highlight');
         selected_student = $(this).data("href");
-
         $("#output_display_container").show();
         $("#input_var_selector").change(); 
-        //$(this).addClass('highlight').siblings().removeClass('highlight');
-        //selected_student = $(this).data("href");
-
-
-
-
-        //$("#output_var_selector").change();
     });
 
+    var request;
     var first_bin_select = true;
     var prediction = {}, predictions = {};
+    var wto;
     $("#input_var_selector").change(function(){
-        // Obtain all selected values
-        var targets = "";
-        var num_vars_selected = 0;
-        $.each($("#input_var_selector option:selected"), function(){
-            targets = targets + ";" + $(this).val();
-            num_vars_selected++;
-        });
-        $("#output_display").hide();
+        clearTimeout(wto);
+        wto = setTimeout(function() {
+            if (request) {
+                request.abort();
+                request = null;
+            }
 
-        // Initialize visual area
-        if(num_vars_selected <= 1){
-            var input_plot = new BarPlotter("#input_display");
-        } else if(num_vars_selected>1){
-            var input_plot = new RadarPlotter("#input_display");
-        }
+            // Obtain all selected values
+            var targets = "";
+            var num_vars_selected = 0;
+            $.each($("#input_var_selector option:selected"), function(){
+                targets = targets + ";" + $(this).val();
+                num_vars_selected++;
+            });
+            $("#output_display").hide();
 
-        input_plot.initialize();
-        
-        
-        if(num_vars_selected > 0){
-            input_plot.show_loading_message();
-        }else{
-            input_plot.show_no_data_message();
-        }
-        var selected = this;
+            // Initialize visual area
+            if(num_vars_selected <= 1){
+                var input_plot = new BarPlotter("#input_display");
+            } else if(num_vars_selected>1){
+                var input_plot = new RadarPlotter("#input_display");
+            }
 
-
-        if(num_vars_selected == 1){
-            d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}+"&selected_student="+selected_student, function(error, data) {
-                if( !data || !('bins' in data) ){
-                    if(data && 'no_data' in data){
-                        var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
-                        input_plot.show_no_data_message(msg+data["no_data"]);
-                    } else {
-                        input_plot.show_no_data_message("No data available.");
-                    }
-                    return; 
-                }
-                predictions = {};
+            input_plot.initialize();
+            
+            
+            if(num_vars_selected > 0){
+                input_plot.show_loading_message();
+            }else{
+                input_plot.show_no_data_message();
+            }
+            var selected = this;
 
 
-                // Disable comparison selector for single variable
-                document.getElementById("comparison_data_selector").setAttribute("disabled", "disabled");
-
-                for( var i = 0 ; i < data['bins'].length; i++){
-                    var d = data['bins'][i];
-                    predictions[""+d['id']] = d['predictions'];
-                    if(i == 0){
-                        $("#output_display").show();
-                        var has_prediction_variables = false;
-                        for(variable in d['predictions']){
-                            has_prediction_variables = true;
-                            $("#output_var_selector").append(
-                                $("<option>")
-                                    .attr('value', variable)
-                                    .text(d['predictions'][variable]['label']));
+            if(num_vars_selected == 1){
+                request = d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}+"&selected_student="+selected_student, function(error, data) {
+                    if (error) return console.warn(error);
+                    if( !data || !('bins' in data) ){
+                        if(data && 'no_data' in data){
+                            var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
+                            input_plot.show_no_data_message(msg+data["no_data"]);
+                        } else {
+                            input_plot.show_no_data_message("No data available.");
                         }
-                        if(has_prediction_variables){
-                            $("#output_display_container").show();
-                            output_variable = $("#output_var_selector").val();
-                            if(d['predictions'][output_variable]['chart'] == "GSS"){
-                                output_plot = new GaussPlotter("#output_display");
-                            }else{
-                                output_plot = new PiePlotter("#output_display");
+                        return; 
+                    }
+                    predictions = {};
+
+
+                    // Disable comparison selector for single variable
+                    document.getElementById("comparison_data_selector").setAttribute("disabled", "disabled");
+
+                    for( var i = 0 ; i < data['bins'].length; i++){
+                        var d = data['bins'][i];
+                        predictions[""+d['id']] = d['predictions'];
+                        if(i == 0){
+                            $("#output_display").show();
+                            var has_prediction_variables = false;
+                            for(variable in d['predictions']){
+                                has_prediction_variables = true;
+                                $("#output_var_selector").append(
+                                    $("<option>")
+                                        .attr('value', variable)
+                                        .text(d['predictions'][variable]['label']));
                             }
-                            output_plot.initialize();
-                            output_plot.set_axis_label(d['predictions'][output_variable]['axis']);
-                            output_plot.draw();
-                        }else{
-                            output_plot = new Plotter("#output_display");
-                            output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+                            if(has_prediction_variables){
+                                $("#output_display_container").show();
+                                output_variable = $("#output_var_selector").val();
+                                if(d['predictions'][output_variable]['chart'] == "GSS"){
+                                    output_plot = new GaussPlotter("#output_display");
+                                }else{
+                                    output_plot = new PiePlotter("#output_display");
+                                }
+                                output_plot.initialize();
+                                output_plot.set_axis_label(d['predictions'][output_variable]['axis']);
+                                output_plot.draw();
+                            }else{
+                                output_plot = new Plotter("#output_display");
+                                output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
+                            }
                         }
                     }
-                }
 
-                input_plot.set_axis_label(data['axis'])
-                input_plot.draw();
-                input_plot.on("select-bin", function(bin){
-                    if( first_bin_select ){
-                        first_bin_select = false;
-                    }else{
-                        log_interaction();
+                    input_plot.set_axis_label(data['axis'])
+                    input_plot.draw();
+                    input_plot.on("select-bin", function(bin){
+                        if( first_bin_select ){
+                            first_bin_select = false;
+                        }else{
+                            log_interaction();
+                        }
+                        prediction = predictions[bin]
+                        output_variable = $("#output_var_selector").val()
+                        if(output_variable){
+                            output_plot.draw();
+                            output_plot.load_data(prediction[output_variable]);
+                        }
+                    });
+                    input_plot.load_data(data);
+                });
+
+            }
+            else if(num_vars_selected >1){
+                request = d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}+"&selected_student="+selected_student, function(error, data) {
+                    if (error) return console.warn(error);
+                    if( !data || !('prediction' in data) ){
+                        if(data && 'no_data' in data){
+                            var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
+                            input_plot.show_no_data_message(msg+(data["no_data"].join(', ')));
+                        } else {
+                            console.log("Oke geen data");
+                            console.log(data);
+                            input_plot.show_no_data_message("No data available.");
+                        }
+                        return; 
                     }
-                    prediction = predictions[bin]
-                    output_variable = $("#output_var_selector").val()
-                    if(output_variable){
+                    //$("#input_display_container").load(location.href + " #input_display_container>*","");
+
+
+                    // Enable comparison selector for single variable
+                    document.getElementById("comparison_data_selector").disabled = false;
+
+                    input_plot.draw();
+                    $.each($("#comparison_data_selector option"), function(){
+                        if(!this.selected){
+                            data[$(this).val()] = [];
+                        }
+                    });
+                    input_plot.load_data(data);
+
+                    prediction = data['prediction']
+
+                    $("#output_var_selector").show();
+                    var has_prediction_variables = false;
+                    for(out_variable in prediction){
+                        has_prediction_variables = true;
+                        $("#output_var_selector").append(
+                            $("<option>")
+                                .attr('value', out_variable)
+                                .text(prediction[out_variable]['label']));
+                    }
+
+                    if(has_prediction_variables){
+                        $("#output_display").show();
+                        output_variable = $("#output_var_selector").val();
+                        if(prediction[output_variable]['chart'] == "GSS"){
+                            output_plot = new GaussPlotter("#output_display");
+                        }else{
+                            output_plot = new PiePlotter("#output_display");
+                        }
+                        output_plot.initialize();
+                        output_plot.set_axis_label(prediction[output_variable]['axis']);
                         output_plot.draw();
                         output_plot.load_data(prediction[output_variable]);
-                    }
-                });
-                input_plot.load_data(data);
-            });
-        }
-        else if(num_vars_selected >1){
-            d3.json("/stats/"+targets+"/?day_shift="+{{ day_shift }}+"&selected_student="+selected_student, function(error, data) {
-                if( !data || !('prediction' in data) ){
-                    if(data && 'no_data' in data){
-                        var msg = "Deze gegevens zijn nog niet binnen gekomen. Er mist data voor de volgende variabele(n):\n";
-                        input_plot.show_no_data_message(msg+(data["no_data"].join(', ')));
-                    } else {
-                        console.log("Oke geen data");
-                        console.log(data);
-                        input_plot.show_no_data_message("No data available.");
-                    }
-                    return; 
-                }
-                //$("#input_display_container").load(location.href + " #input_display_container>*","");
-
-
-                // Enable comparison selector for single variable
-                document.getElementById("comparison_data_selector").disabled = false;
-
-                input_plot.draw();
-                $.each($("#comparison_data_selector option"), function(){
-                    if(!this.selected){
-                        data[$(this).val()] = [];
-                    }
-                });
-                input_plot.load_data(data);
-
-                prediction = data['prediction']
-
-                $("#output_var_selector").show();
-                var has_prediction_variables = false;
-                for(out_variable in prediction){
-                    has_prediction_variables = true;
-                    $("#output_var_selector").append(
-                        $("<option>")
-                            .attr('value', out_variable)
-                            .text(prediction[out_variable]['label']));
-                }
-
-                if(has_prediction_variables){
-                    $("#output_display").show();
-                    output_variable = $("#output_var_selector").val();
-                    if(prediction[output_variable]['chart'] == "GSS"){
-                        output_plot = new GaussPlotter("#output_display");
                     }else{
-                        output_plot = new PiePlotter("#output_display");
+                        output_plot = new Plotter("#output_display");
+                        output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
                     }
-                    output_plot.initialize();
-                    output_plot.set_axis_label(prediction[output_variable]['axis']);
-                    output_plot.draw();
-                    output_plot.load_data(prediction[output_variable]);
-                }else{
-                    output_plot = new Plotter("#output_display");
-                    output_plot.show_no_data_message("Deze studieresultaten zijn nog niet beschikbaar");
-                }
-            });
-        }
+                });
+            }
+        }, 1000);
     });
 
     $("#output_var_selector").change(function(){

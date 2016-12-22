@@ -103,7 +103,7 @@ def get_variable_stats(request, variable_names):
     var_statistics = {}
     print 'Variables:'
     for variable in variables:
-        print '\t', variable, course_datetime_now
+        print '   ', variable, course_datetime_now
         value_history_1516 = ValueHistory.objects.filter(variable=variable.pk, group=2, course_datetime__lte=course_datetime_now)
         if len(value_history_1516) == 0:
             print 'Valuehistory used for model building not found. Check if variables are correctly stored to valuehistory for the following variable:', variable
@@ -218,7 +218,6 @@ def get_variable_stats(request, variable_names):
 
     # Evaluate the model 
     scores = stratified_cross_val_score(X, Y, regr, rounds = 50)
-    mean_abs_error, root_mean_square_error, fail_pass_accuracy, failing_students_recall = stratified_cross_val_score(X, Y, regr, rounds = 50)
 
     # Baseline classifiers says always pass
     baseline_accuracy = (float)(len([x for x in Y if x > 5.4]))/len(Y)
