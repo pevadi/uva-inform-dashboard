@@ -35,7 +35,7 @@ def get_variable_stats(request, variable_names):
     """
 
     # Debugging logs
-    debug_out = open("../../../home/pepijn/update.log", "a")
+    debug_out = open("/home/pepijn/report.log", "a")
     def debug(msg):
         if debug_out is not None:
             debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), str(msg)))
