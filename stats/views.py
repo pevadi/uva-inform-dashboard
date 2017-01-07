@@ -9,23 +9,39 @@ from course.models import CourseGroup, Student
 from identity import identity_required
 from datetime import date, timedelta
 
+from inspect import currentframe, getframeinfo
+import time
+
+
+
 @identity_required
 def get_variable_stats(request, variable_names):
     import numpy as np
     import csv
-    from sklearn import svm, linear_model
+    from sklearn import svm, linear_model    
     from sklearn.preprocessing import normalize
     from sklearn.metrics import explained_variance_score, mean_absolute_error, mean_squared_error, median_absolute_error, r2_score
     from sklearn.model_selection import train_test_split, StratifiedKFold, KFold
     from math import sqrt
-    from datetime import timedelta
+    from datetime import timedelta, datetime
     from django.contrib.auth.models import User
+    import time
+    t0 = time.time()
 
     """returns the most recent values of a variable.
     
     parameters:
         variable_name   -   the variable for which to lookup the values.
     """
+
+    # Debugging logs
+    debug_out = open("../../../home/pepijn/update.log", "a")
+    def debug(msg):
+        if debug_out is not None:
+            debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), str(msg)))
+            print("[%s] %s" % (datetime.now().isoformat(), str(msg)))
+
+
     # Ensure the request uses the GET method.  
     if not request.method == "GET":
         return HttpResponseNotAllowed(['GET'])
@@ -38,9 +54,10 @@ def get_variable_stats(request, variable_names):
         variables.append(get_object_or_404(Variable, name=var_names[x]))
         var_labels.append(variables[-1].label[:-6])
 
+    
     # Get student
     if request.GET.get('selected_student'):
-        print 'Student selected:', request.GET.get('selected_student')
+        debug('Student selected: %s' % (request.GET.get('selected_student')))
         if User.objects.filter(username=request.session.get("authenticated_user"))[0].is_authenticated:
             try:
                 student = Student.objects.get(identification=request.GET.get('selected_student'))
@@ -56,10 +73,9 @@ def get_variable_stats(request, variable_names):
     # the perspective of a different day. Both negative and positive integers
     # are allowed to represent the number of days to substract or add.
     day_shift = timedelta(days=int(request.GET.get('day_shift', '0')))
-
-    print '\nREPORT'
-    print 'Day_shift', day_shift
-    print 'Course', request.session.get('authenticated_course')
+    debug('\nREPORT')
+    debug('Day_shift %s' % day_shift)
+    debug('Course %s' % request.session.get('authenticated_course'))
     groups = CourseGroup.get_groups_by_date(date.today()+day_shift,
             course__url=request.session.get('authenticated_course'),
             members=student)
@@ -76,8 +92,8 @@ def get_variable_stats(request, variable_names):
     # way comparable data can be retrieved from last year (same time in the course)
     course_datetime_now = group.calculate_course_datetime(timezone.now()+day_shift)
 
-    print 'Group', group,'mul', groups
-    print 'Datetime', course_datetime_now
+    debug('Group %s' % group.name)
+    debug('Datetime%s' %  course_datetime_now)
     # Collect relevant statistics for prediction of this student
     student_statistics = []
     student_statistics_obj = []
@@ -101,13 +117,15 @@ def get_variable_stats(request, variable_names):
 
     # Collect relevant value statistics for model building. Y 2015-2016 (pk=2) was selected for this purpose
     var_statistics = {}
-    print 'Variables:'
+    debug('Variables:')
     for variable in variables:
-        print '   ', variable, course_datetime_now
+        t0 = time.time()
+        debug('   %s %s' % (variable.name, course_datetime_now))
         value_history_1516 = ValueHistory.objects.filter(variable=variable.pk, group=2, course_datetime__lte=course_datetime_now)
         if len(value_history_1516) == 0:
-            print 'Valuehistory used for model building not found. Check if variables are correctly stored to valuehistory for the following variable:', variable
+            debug('Valuehistory used for model building not found. Check if variables are correctly stored to valuehistory for the following variable: %s' % variable.name)
             return JsonResponse([], safe=False)
+        t0 = time.time()
         var_statistics[variable.name] = variable.calculate_statistics_from_values(value_history_1516)
 
     # Placeholder for the viewer's statement, as well as the bin it falls in.
@@ -119,7 +137,7 @@ def get_variable_stats(request, variable_names):
             reader = csv.reader(infile)
             iki_grades = {rows[0]:rows[1] for rows in reader}
     except IOError, e:
-        print e
+        debug('%s' % e)
         iki_grades = {}
 
 
@@ -165,7 +183,7 @@ def get_variable_stats(request, variable_names):
     # extract data in matrix form from the value dicts
     X, Y = extract_xy_values(iki_grades.keys(), var_names, variable_value_dicts, iki_grades)  
     if len(X) == 0:
-        print 'No training data available'
+        debug('No training data available')
         return JsonResponse([], safe=False)
     X = normalize(X, axis=0, norm='max')
 
@@ -192,8 +210,8 @@ def get_variable_stats(request, variable_names):
     lower_points_bins = []
     upper_points_bins = []
     # Calculate bins
-    print 'max', max_values
-    print 'min', min_values
+    debug('max %s' % max_values)
+    debug('min %s' % min_values)
     for i in xrange(len(max_values)):
         num_bins = 10
         bin_sizes.append((max_values[i]-min_values[i])/float(num_bins))
@@ -221,12 +239,12 @@ def get_variable_stats(request, variable_names):
 
     # Baseline classifiers says always pass
     baseline_accuracy = (float)(len([x for x in Y if x > 5.4]))/len(Y)
-    print 'Performance report:'
-    print 'Baseline classifier (fail/pass)', baseline_accuracy
-    print 'Mean absolute error', scores['mae']
-    print 'Root mean square error', scores['rmse']
-    print 'Fail/pass accuracy', scores['fpa']
-    print 'Failing students recall:',scores['fsr'], '\n' #,'of', n_failing, 'failing students'
+    debug('Performance report:')
+    debug('Baseline classifier (fail/pass) %s' % baseline_accuracy)
+    debug('Mean absolute error %s' % str(scores['mae']))
+    debug('Root mean square error %s' % str(scores['rmse']))
+    debug('Fail/pass accuracy %s' % str(scores['fpa']))
+    debug('Failing students recall: %s' % str(scores['fsr'])) #,'of', n_failing, 'failing students'
 
     # Now train again using all instances, this model is used for final prediction
     regr.fit(X, Y)
@@ -238,14 +256,14 @@ def get_variable_stats(request, variable_names):
         grade_so_far = 0
         student.assignments_completion = 0
     total_weight = student.assignments_completion
-    print total_weight, grade_so_far
+    debug('Total Weight %i and grade so far % i' % (total_weight, grade_so_far))
 
 
     try:
-        print 'Student info:'
-        print student.identification, iki_grades[encrypt_value(student.identification)], regr.predict([student_statistics])[0]
+        debug('Student info:')
+        debug('id %s grade %i predicted %i' % (student.identification, iki_grades[encrypt_value(student.identification)], regr.predict([student_statistics])[0]))
     except KeyError:
-        print student.identification, 'no grade', regr.predict([student_statistics])[0], grade_so_far + (regr.predict([student_statistics])[0]*(float(1)-total_weight))
+        debug('id %s predicted %i predicted with actual grade %i' % (student.identification, regr.predict([student_statistics])[0], grade_so_far + (regr.predict([student_statistics])[0]*(float(1)-total_weight))))
 
     # Update predicted grade in database
     if len(student_statistics) > 5:
@@ -310,7 +328,7 @@ def get_variable_stats(request, variable_names):
         prediction['final_grade']['chart'] = 'GSS'
         prediction['final_grade']['label'] = 'Final Grade'
         prediction['final_grade']['axis'] = 'final grade'
-
+        debug("Total elapsed: %s" % (time.time()-t0))
         return JsonResponse({
             "variable_names": var_labels,
             "student_statistics": list(student_statistics),
