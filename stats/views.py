@@ -25,15 +25,13 @@ def get_variable_stats(request, variable_names):
     from math import sqrt
     from datetime import timedelta, datetime
     from django.contrib.auth.models import User
-    import time
-    t0 = time.time()
 
     """returns the most recent values of a variable.
     
     parameters:
         variable_name   -   the variable for which to lookup the values.
     """
-
+    
     # Debugging logs
     debug_out = open("../../../home/pepijn/report.log", "a")
     def debug(msg):
@@ -203,6 +201,7 @@ def get_variable_stats(request, variable_names):
             segments.append([])
 
     mean_statistics = np.mean(X_comparison, axis = 0)
+    debug('stats %i %s' % (int(student.identification), str(student_statistics)))
     student_statistics = normalize_instance(student_statistics, norms)
 
     bin_sizes = []
@@ -261,9 +260,9 @@ def get_variable_stats(request, variable_names):
 
     try:
         debug('Student info:')
-        debug('id %s grade %i predicted %i' % (student.identification, iki_grades[encrypt_value(student.identification)], regr.predict([student_statistics])[0]))
+        debug('id %i grade %i predicted %i' % (int(student.identification), iki_grades[encrypt_value(student.identification)], regr.predict([student_statistics])[0]))
     except KeyError:
-        debug('id %s predicted %i predicted with actual grade %i' % (student.identification, regr.predict([student_statistics])[0], grade_so_far + (regr.predict([student_statistics])[0]*(float(1)-total_weight))))
+        debug('id %i predicted %i predicted with actual grade %i' % (int(student.identification), regr.predict([student_statistics])[0], (grade_so_far + (regr.predict([student_statistics])[0]*(float(1)-total_weight)))))
 
     # Update predicted grade in database
     if len(student_statistics) > 5:
@@ -328,7 +327,6 @@ def get_variable_stats(request, variable_names):
         prediction['final_grade']['chart'] = 'GSS'
         prediction['final_grade']['label'] = 'Final Grade'
         prediction['final_grade']['axis'] = 'final grade'
-        debug("Total elapsed: %s" % (time.time()-t0))
         return JsonResponse({
             "variable_names": var_labels,
             "student_statistics": list(student_statistics),
