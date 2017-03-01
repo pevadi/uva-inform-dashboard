@@ -197,14 +197,14 @@ class XAPIConnector(object):
                     else:
                         resource = None
                 except Exception as e:
-                    print "Error decoding response:", resp.text
+                    print "Error decoding response:", e #, resp.text
                     return False
             return statements
         except IOError as e:
             if self.logger is not None:
                 self.logger.error(e)
 
-    def getAllStatementsByRelatedActitity(self, related_activity, epoch=None):
+    def getAllStatementsByRelatedActitity(self, related_activity, epoch=None, until=None):
         filters = {
                 'related_activities': 'True',
                 'activity': related_activity}
@@ -213,5 +213,11 @@ class XAPIConnector(object):
                 epoch = epoch.replace(tzinfo=pytz.utc)
             epoch = epoch.replace(microsecond=0)
             filters['since'] = epoch.isoformat()
+            
+        if until is not None:
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=pytz.utc)
+            until = until.replace(microsecond=0)
+            filters['until'] = until.isoformat()
 
         return self.getFilteredStatements(filters)
