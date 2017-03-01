@@ -9,6 +9,42 @@ from .helpers import *
 import json
 import gc
 
+
+# Imports final grades from storage and stores as student attribute
+def import_final_grades_from_csv(request=None, debug_out=None, file_name=None):
+    import numpy as np
+    from datetime import datetime
+    from course.models import Student
+
+    debug_out = open("../../../home/pepijn/update.log", "a")
+    def debug(msg):
+        if debug_out is not None:
+            debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), msg))
+            print("[%s] %s" % (datetime.now().isoformat(), msg))
+
+    if file_name is not None:
+        debug("Started updating student final grades from csv.")
+        grade_report = np.genfromtxt(file_name, delimiter=',', dtype=None)
+        count = 0
+        for grade_record in grade_report:
+            count += 1
+            student_id = str(grade_record[0])
+            final_grade = float(grade_record[1])
+            passed = grade_record[3]
+            print count, student_id, final_grade, passed
+            # Get student object
+            try:
+                student = Student.objects.get(identification=student_id)
+                debug("Updated final grade  %s: %d" % (student.identification, final_grade))
+                student.final_grade = final_grade
+                student.passed_course = passed
+                student.save()
+            except Student.DoesNotExist:
+                debug('No student found with %s. Possible I.C. = 0 case.' % student_id) 
+    else:
+        debug("No file name given.")
+
+
 # Removes all data of the ignored users from local database. Also sets all users to no dashboard.
 # The coursegroup is fixed to 3, this is because this function should not be needed anymore in
 # new episodes because of a bugfix. 
@@ -32,7 +68,7 @@ def remove_none_values_scores(request=None, debug_out=None):
     Activity.objects.filter(verb="http://adlnet.gov/expapi/verbs/scored", type="http://id.tincanapi.com/activitytype/school-assignment", value=None).delete()
 
 
-def get_grade_so_far(student_id, debug_out=None):
+def get_grade_so_far(student_id, debug_out=None, until=None):
     from storage.models import Activity
     from course.models import Assignment
     from django.core.exceptions import ObjectDoesNotExist 
@@ -52,7 +88,10 @@ def get_grade_so_far(student_id, debug_out=None):
     for assignment in assignments:
         # Get highest grade assigned (in order to filter out zero values and older grades. Assumes the highest grade is the latest.
         try:
-            assignment_activity =  Activity.objects.filter(user=student_id, activity=assignment.url).latest('value')
+            if until:
+                assignment_activity =  Activity.objects.filter(user=student_id, activity=assignment.url, date_due__lte=until).latest('value')
+            else:
+                assignment_activity =  Activity.objects.filter(user=student_id, activity=assignment.url).latest('value')
             if assignment_activity.value != None:
                 # We ignore zeros for presentations because those are definite errors
                 if assignment_activity.value == 0  and assignment.url in presentation_urls:
@@ -68,13 +107,44 @@ def get_grade_so_far(student_id, debug_out=None):
     else:
         return 0, None
 
-# This function get ALL data from the LRS, yes, ALL data.
-def update_all(request=None, debug_out=None):
+
+# This function repopulates all value history from the LRS in a provided calendar year.
+def repopulate_valuehistorys(request=None, debug_out=None):
+    from course.models import Course
+    from stats.models import Variable
+    from datetime import datetime
+
+    debug_out = open("../../../home/pepijn/update.log", "a")
+    def debug(msg):
+        if debug_out is not None:
+            debug_out.write("[%s] %s \n" % (datetime.now().isoformat(), msg))
+            print("[%s] %s" % (datetime.now().isoformat(), msg))
+
+    debug("Started removing history.")
+    for variable in Variable.objects.filter(course__in=Course.objects.filter(active=True)):
+        debug("Deleting variable %s" % (variable.name,))
+        variable.delete_valuehistory()
+
+
+    debug("Started populating variables.")
+    for variable in Variable.objects.filter(course__in=Course.objects.filter(active=True)):
+        debug("Populating variable %s" % (variable.name,))
+        variable.repopulate_valuehistory()
+
+
+    if request is not None:
+        return HttpResponse(0)
+    else:
+        debug("Finished")
+
+# This function get ALL data (activities) from the LRS in a provided calendar year.
+def update_all(request=None, debug_out=None, year=None):
     from course.models import Course
     from stats.models import Variable
     from .models import Activity
     from storage import XAPIConnector
     from datetime import datetime
+    from django.db.models import Max, Min
     xapi = XAPIConnector()
     def debug(msg):
         if debug_out is not None:
@@ -87,16 +157,21 @@ def update_all(request=None, debug_out=None):
     for course in Course.objects.filter(active=True):
         debug("Selected course '%s'" % (course.url, ))
         ########### Load all data of all course groups ###########
-        res = course.coursegroup_set.aggregate(Min('start_date'))
-        epoch = datetime.combine(
-                res['start_date__min'], datetime.min.time())
+        if year is not None:
+            epoch = datetime.combine(datetime.strptime(str(year)+"0101", "%Y%m%d"), datetime.min.time())
+            until = datetime.combine(datetime.strptime(str(year+1)+"0101", "%Y%m%d"), datetime.min.time())
+        else:
+            res = course.coursegroup_set.aggregate(Min('start_date'))
+            epoch = datetime.combine(
+                    res['start_date__min'], datetime.min.time())
+            until = None
         ##########################################################
-        debug("Selected epoch %s" % (epoch.isoformat(),))
+        debug("Selected epoch %s %s" % (epoch.isoformat(), until))
         for url in course.url_variations:
             count = 0
             skipped = 0
             debug("Fetch URL variation '%s'" % (url,))
-            activities = xapi.getAllStatementsByRelatedActitity(url, epoch)
+            activities = xapi.getAllStatementsByRelatedActitity(url, epoch, until)
             print 'n# of activities', len(activities)
             if activities is None:
                 continue
@@ -119,20 +194,12 @@ def update_all(request=None, debug_out=None):
             total_skipped += skipped
         debug("(Total) Created: %d, Skipped: %d" % (total_count, total_skipped))
 
-    debug("Skipped id's:\n%s" % (
-        [activity['object']['id'] for activity in skipped_id],))
-
-    debug("Starting update variables.")
-    for variable in Variable.objects.filter(course__in=Course.objects.filter(active=True)):
-        debug("Updating variable %s" % (variable.name,))
-        variable.update_from_storage()
-
     if request is not None:
         return HttpResponse(count)
     else:
         debug("Finished, imported %d activities." % (total_count,))
 
-# This functions gets the newest data from the LRS (very, very similar to the function above)
+# This functions gets solely the new data from the LRS (very, very similar to the function above)
 def update(request=None, debug_out=None):
     import time
     start_time = time.time()
@@ -201,7 +268,7 @@ def update(request=None, debug_out=None):
     debug("Starting update variables.")
     for variable in Variable.objects.filter(course__in=Course.objects.filter(active=True)):
         debug("Updating variable %s" % (variable.name,))
-        variable.update_from_storage()
+        variable.update_valuehistory()
 
     debug("Elapsed:  %s seconds" % (time.time() - start_time))
     if request is not None:
@@ -212,7 +279,7 @@ def update(request=None, debug_out=None):
         debug("Finished (manual), imported %d activities." % (total_count,))
         debug_out.close()
 
-# This functions gets the newest data from the LRS (very, very similar to the function above)
+# This functions gets the newest grades from the LRS (very, very similar to the function above)
 def update_grades(request=None, debug_out=None):
     import time
     start_time = time.time()
@@ -228,9 +295,10 @@ def update_grades(request=None, debug_out=None):
     debug('Updating grades for the following course groups')
     
     active_course_groups = CourseGroup.objects.filter(end_date__gte=datetime.now())
+    active_course_groups = CourseGroup.objects.filter(label="Year 2016 - 2017")
     debug(active_course_groups)
     for active_course_group in active_course_groups:
-        debug("Number of active course groups: %d" % (len(active_course_group.members.all())))
+        debug("Number of students in course groups: %d" % (len(active_course_group.members.all())))
         for student in active_course_group.members.all():
             total_weight, updated_grade = get_grade_so_far(student.identification, debug_out)
             if total_weight > 0:
