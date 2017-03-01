@@ -13,7 +13,6 @@ from inspect import currentframe, getframeinfo
 import time
 
 
-
 @identity_required
 def get_variable_stats(request, variable_names):
     import numpy as np
@@ -70,7 +69,7 @@ def get_variable_stats(request, variable_names):
     # The day shift parameter allows for admin's to look at the dashboard from
     # the perspective of a different day. Both negative and positive integers
     # are allowed to represent the number of days to substract or add.
-    day_shift = timedelta(days=int(request.GET.get('day_shift', '0')))
+    day_shift = timedelta(days=int(request.GET.get('day_shift', '0'))-1)
     debug('\nREPORT')
     debug('Day_shift %s' % day_shift)
     debug('Course %s' % request.session.get('authenticated_course'))
@@ -98,32 +97,29 @@ def get_variable_stats(request, variable_names):
     # Collect the statistics of the other students of his/her year in order to be able to viualise a comparison
     comparison_statistics = {}
     for variable in variables:
-        value_history_student = ValueHistory.objects.filter(variable=variable, course_datetime__lte=course_datetime_now, student=student.identification, group=group)
-        value_history_comparison = ValueHistory.objects.filter(variable=variable, course_datetime__lte=course_datetime_now, group=group)
+        value_history_student = ValueHistory.objects.filter(variable=variable,course_datetime__gte=timedelta(days=course_datetime_now.days), course_datetime__lt=timedelta(days=course_datetime_now.days+1), student=student.identification, group=group)
+        value_history_comparison = ValueHistory.objects.filter(variable=variable, course_datetime__gte=timedelta(days=course_datetime_now.days), course_datetime__lt=timedelta(days=course_datetime_now.days+1), group=group)
         # This if statement is only here so I can see the dashboard with the natasa5 preview user. Of course she should not be included in the comparison data otherwise.
         if student.identification != "natasa5_previewuser":
             value_history_comparison = value_history_comparison.exclude(student="natasa5_previewuser")
         # Calc statistics
         if len(value_history_student) > 0:
             comparison_statistics[variable.name] = variable.calculate_statistics_from_values(value_history_comparison)
-            student_statistics.append(variable.calculate_statistics_from_values(value_history_student)[0]['value'])
+            student_statistics.append(value_history_student[0].value)
             student_statistics_obj.append(variable.calculate_statistics_from_values(value_history_student)[0])
         else:
             student_statistics.append(0)
             comparison_statistics[variable.name] = variable.calculate_statistics_from_values(value_history_comparison)
 
-
     # Collect relevant value statistics for model building. Y 2015-2016 (pk=2) was selected for this purpose
     var_statistics = {}
     debug('Variables:')
     for variable in variables:
-        t0 = time.time()
         debug('   %s %s' % (variable.name, course_datetime_now))
-        value_history_1516 = ValueHistory.objects.filter(variable=variable.pk, group=2, course_datetime__lte=course_datetime_now)
+        value_history_1516 = ValueHistory.objects.filter(variable=variable.pk, group=2, course_datetime__gte=timedelta(days=course_datetime_now.days), course_datetime__lt=timedelta(days=course_datetime_now.days+1))
         if len(value_history_1516) == 0:
             debug('Valuehistory used for model building not found. Check if variables are correctly stored to valuehistory for the following variable: %s' % variable.name)
             return JsonResponse([], safe=False)
-        t0 = time.time()
         var_statistics[variable.name] = variable.calculate_statistics_from_values(value_history_1516)
 
     # Placeholder for the viewer's statement, as well as the bin it falls in.
@@ -149,7 +145,7 @@ def get_variable_stats(request, variable_names):
     variable_value_dicts = {}
     variable_value_dicts_comparison = {}
     comparison_student_ids = []
-    comparison_student_ids_nohash = []
+    # comparison_student_ids_nohash = []
     # Loop over all variables
     for var_name in var_names:
         all_values = []
@@ -168,15 +164,14 @@ def get_variable_stats(request, variable_names):
         for indv_student_statistic in comparison_statistic:
             # Add the student statistics to the dict
             student_id = encrypt_value(indv_student_statistic['student'])
-            comparison_student_ids_nohash.append(indv_student_statistic['student'])
+            # comparison_student_ids_nohash.append(indv_student_statistic['student'])
             comparison_student_ids.append(student_id)
             variable_value_dicts_comparison[var_name][student_id] = indv_student_statistic
             all_values.append(indv_student_statistic['value'])
-            
         max_values.append(max(all_values))
         min_values.append(min(all_values))
     comparison_student_ids = list(set(comparison_student_ids))
-    comparison_student_ids_nohash = list(set(comparison_student_ids_nohash))
+    # comparison_student_ids_nohash = list(set(comparison_student_ids_nohash))
     
     # extract data in matrix form from the value dicts
     X, Y = extract_xy_values(iki_grades.keys(), var_names, variable_value_dicts, iki_grades)  
@@ -187,7 +182,7 @@ def get_variable_stats(request, variable_names):
 
     # Extract data in matrix form from dicts
     X_comparison, _ = extract_xy_values(comparison_student_ids, var_names, variable_value_dicts_comparison, {}, x_only=True)
-    X_comparison, norms =  normalize(X_comparison, axis=0, norm='max', return_norm=True)
+    X_comparison, norms = normalize(X_comparison, axis=0, norm='max', return_norm=True)
 
     grade_ranges = [(0,6), (6,8), (8,10)]
     segments = []
@@ -223,7 +218,6 @@ def get_variable_stats(request, variable_names):
 
     # Use machine learning to create a predictive model
     Y = np.array(Y).astype(dtype='float')
-    # Y_binarized = [y>5.4 for y in Y]
     X = np.array(X).astype(dtype='float')
    
     from sklearn.neighbors import KNeighborsRegressor
@@ -234,7 +228,7 @@ def get_variable_stats(request, variable_names):
         regr = KNeighborsRegressor()
 
     # Evaluate the model 
-    scores = stratified_cross_val_score(X, Y, regr, rounds = 50)
+    scores = stratified_cross_val_score(X, Y, regr, rounds = 10)
 
     # Baseline classifiers says always pass
     baseline_accuracy = (float)(len([x for x in Y if x > 5.4]))/len(Y)
@@ -260,7 +254,7 @@ def get_variable_stats(request, variable_names):
 
     try:
         debug('Student info:')
-        debug('id %i grade %i predicted %i' % (int(student.identification), iki_grades[encrypt_value(student.identification)], regr.predict([student_statistics])[0]))
+        debug('id %i grade %s predicted %i' % (int(student.identification), iki_grades[encrypt_value(student.identification)], regr.predict([student_statistics])[0]))
     except KeyError:
         debug('id %i predicted %i predicted with actual grade %i' % (int(student.identification), regr.predict([student_statistics])[0], (grade_so_far + (regr.predict([student_statistics])[0]*(float(1)-total_weight)))))
 
