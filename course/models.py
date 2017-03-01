@@ -10,6 +10,8 @@ class Student(models.Model):
     grade_so_far = models.FloatField(db_index=True, blank=True, null=True)
     assignments_completion = models.FloatField(db_index=True, blank=True, null=True)
     predicted_grade = models.FloatField(db_index=True, blank=True, null=True)
+    final_grade = models.FloatField(db_index=True, blank=True, null=True)
+    passed_course = models.NullBooleanField(blank=True, null=True)
 
     @property
     def has_treatment(self):
@@ -81,6 +83,7 @@ class CourseGroup(models.Model):
     label = models.CharField(max_length=255, blank=True)
     members = models.ManyToManyField('course.Student', blank=True,
             related_name='statistic_groups')
+    last_updated = models.DateTimeField(null=True, blank=True)
 
     @classmethod
     def get_groups_by_date(cls, date, **kwargs):
@@ -89,8 +92,13 @@ class CourseGroup(models.Model):
 
     def calculate_course_datetime(self, datetime_value=None):
         datetime_value = datetime_value or timezone.now()
-        return datetime_value - timezone.make_aware(datetime.combine(
+        course_datetime = datetime_value - timezone.make_aware(datetime.combine(
             self.start_date, datetime.min.time()))
+        # A course takes 55 days (including day 0)
+        # print type(course_datetime)
+        # if course_datetime.days > 55:
+        #     course_datetime.days = 55
+        return course_datetime
 
     def __unicode__(self):
         return u"(%s - %s)" % (unicode(self.course),
