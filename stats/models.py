@@ -201,13 +201,13 @@ class Variable(PolymorphicModel):
         course_groups = CourseGroup.objects.all()
         for course_group in course_groups:
             group_members = course_group.members.all().values_list('identification', flat=True)
-            print 'Course group', course_group.name,course_group.start_date-timedelta(days=7), course_group.start_date, course_group.end_date, len(group_members)
+            print 'Course group', course_group.name,course_group.start_date-timedelta(days=7), course_group.start_date, course_group.end_date, len(group_members), self.course.url_variations
             # Retrieve relevant activity instances for this variable.
             ignored_objects = IgnoredObject.objects.all().values_list(
                     'object_id', flat=True)
             activities = Activity.objects.exclude(
                     activity__in=ignored_objects).filter(
-                            course=self.course.url,
+                            course__in=self.course.url_variations,
                             type=self.types.all()[0],
                             verb=self.verbs.all()[0],
                             time__gte=course_group.start_date-timedelta(days=7),
@@ -267,7 +267,7 @@ class Variable(PolymorphicModel):
                         updated_students.append(student_id)
 
                         latest_act = activity_chunk.latest('time')
-                        if (self.last_consumed_activity_timestamp == None and self.last_consumed_activity_pk == 0) or latest_timestamp > self.last_consumed_activity_timestamp:
+                        if (self.last_consumed_activity_timestamp == None and self.last_consumed_activity_pk == 0) or latest_act.time >  self.last_consumed_activity_timestamp:
                             self.last_consumed_activity_timestamp = latest_act.time
                             self.last_consumed_activity_pk = latest_act.pk
                             self.save()
