@@ -54,7 +54,8 @@ def remove_ignored_user_data(request=None, debug_out=None):
     from viewer.models import GroupAssignment
     ignored_user_ids = [x.user for x in IgnoredUser.objects.all()]
     for user_id in ignored_user_ids:
-        # Delete valuahistory from local db
+        print "deleting", user_id
+        # Delete valuahistory from local d
         ValueHistory.objects.filter(student=user_id, group=3).delete()
         # Set treatment to NO DASHBOARD
         if GroupAssignment.objects.filter(student=user_id):
